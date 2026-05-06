@@ -1,4 +1,82 @@
 import streamlit as st
+from typing import TypedDict
+from langgraph.graph import StateGraph, END
+
+class DesignState(TypedDict):
+    house_type: str
+    wind_speed: float
+    internal_cp: float
+    result_text: str
+
+
+def input_check_agent(state: DesignState):
+    house_type = state["house_type"]
+    wind_speed = state["wind_speed"]
+
+    if wind_speed <= 0:
+        state["result_text"] = "입력 오류: 풍속은 0보다 커야 합니다."
+    else:
+        state["result_text"] = f"{house_type} 입력값 검토 완료"
+
+    return state
+
+
+def wind_load_agent(state: DesignState):
+    wind_speed = state["wind_speed"]
+    internal_cp = state["internal_cp"]
+
+    rho = 1.225
+    q = 0.5 * rho * wind_speed ** 2
+
+    state["result_text"] += f"\n속도압 q = {q:.2f} Pa"
+    state["result_text"] += f"\n내압계수 Cpi = {internal_cp}"
+
+    return state
+
+
+def build_graph():
+    graph = StateGraph(DesignState)
+
+    graph.add_node("input_check_agent", input_check_agent)
+    graph.add_node("wind_load_agent", wind_load_agent)
+
+    graph.set_entry_point("input_check_agent")
+    graph.add_edge("input_check_agent", "wind_load_agent")
+    graph.add_edge("wind_load_agent", END)
+
+    return graph.compile()
+
+st.subheader("LangGraph 다중에이전트 테스트")
+
+house_type = st.selectbox(
+    "온실 형식",
+    ["10-단동-1형", "기타"]
+)
+
+wind_speed = st.number_input(
+    "기본풍속 V (m/s)",
+    value=30.0
+)
+
+internal_cp = st.number_input(
+    "내압계수 Cpi",
+    value=-0.2
+)
+
+if st.button("LangGraph 실행"):
+    app = build_graph()
+
+    input_state = {
+        "house_type": house_type,
+        "wind_speed": wind_speed,
+        "internal_cp": internal_cp,
+        "result_text": ""
+    }
+
+    result = app.invoke(input_state)
+
+    st.success("LangGraph 실행 완료")
+    st.text(result["result_text"])
 
 st.set_page_config(page_title="구조설계 도우미", layout="wide")
 
