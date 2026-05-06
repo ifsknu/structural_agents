@@ -5,31 +5,78 @@ from langgraph.graph import StateGraph, END
 class DesignState(TypedDict):
     house_type: str
     wind_speed: float
+    external_cp: float
     internal_cp: float
-    result_text: str
+    rafter_spacing: float
+
+    input_check_result: str
+    wind_result: dict
+    summary_text: str
 
 
 def input_check_agent(state: DesignState):
-    house_type = state["house_type"]
-    wind_speed = state["wind_speed"]
+    errors = []
 
-    if wind_speed <= 0:
-        state["result_text"] = "입력 오류: 풍속은 0보다 커야 합니다."
+    if state["wind_speed"] <= 0:
+        errors.append("기본풍속은 0보다 커야 합니다.")
+
+    if state["rafter_spacing"] <= 0:
+        errors.append("서까래 간격은 0보다 커야 합니다.")
+
+    if state["external_cp"] == 0:
+        errors.append("외압계수가 0입니다. 외압계수를 다시 확인하세요.")
+
+    if errors:
+        state["input_check_result"] = "\n".join(errors)
     else:
-        state["result_text"] = f"{house_type} 입력값 검토 완료"
+        state["input_check_result"] = "입력값 검토 완료"
 
     return state
 
 
 def wind_load_agent(state: DesignState):
-    wind_speed = state["wind_speed"]
-    internal_cp = state["internal_cp"]
+    V = state["wind_speed"]
+    Cpe = state["external_cp"]
+    Cpi = state["internal_cp"]
+    spacing = state["rafter_spacing"]
 
     rho = 1.225
-    q = 0.5 * rho * wind_speed ** 2
 
-    state["result_text"] += f"\n속도압 q = {q:.2f} Pa"
-    state["result_text"] += f"\n내압계수 Cpi = {internal_cp}"
+    # 속도압 q = 1/2 * rho * V^2
+    q = 0.5 * rho * V ** 2
+
+    # 순압계수
+    net_cp = Cpe - Cpi
+
+    # 풍압, 단위: N/m2 = Pa
+    wind_pressure = q * net_cp
+
+    # 서까래 간격을 고려한 선하중, 단위: N/m
+    line_load = wind_pressure * spacing
+
+    state["wind_result"] = {
+        "속도압 q [Pa]": round(q, 3),
+        "외압계수 Cpe": Cpe,
+        "내압계수 Cpi": Cpi,
+        "순압계수 Cpe-Cpi": round(net_cp, 3),
+        "풍압 p [Pa]": round(wind_pressure, 3),
+        "서까래 간격 [m]": spacing,
+        "선하중 w [N/m]": round(line_load, 3),
+        "선하중 w [kN/m]": round(line_load / 1000, 6),
+    }
+
+    return state
+
+
+def summary_agent(state: DesignState):
+    result = state["wind_result"]
+
+    state["summary_text"] = (
+        f"{state['house_type']}에 대해 입력된 기본풍속 {state['wind_speed']} m/s, "
+        f"외압계수 {state['external_cp']}, 내압계수 {state['internal_cp']}를 적용하여 "
+        f"풍압은 {result['풍압 p [Pa]']} Pa, "
+        f"서까래 1개당 선하중은 {result['선하중 w [kN/m]']} kN/m로 산정되었습니다."
+    )
 
     return state
 
@@ -39,14 +86,16 @@ def build_graph():
 
     graph.add_node("input_check_agent", input_check_agent)
     graph.add_node("wind_load_agent", wind_load_agent)
+    graph.add_node("summary_agent", summary_agent)
 
     graph.set_entry_point("input_check_agent")
     graph.add_edge("input_check_agent", "wind_load_agent")
-    graph.add_edge("wind_load_agent", END)
+    graph.add_edge("wind_load_agent", "summary_agent")
+    graph.add_edge("summary_agent", END)
 
     return graph.compile()
 
-st.subheader("LangGraph 다중에이전트 테스트")
+st.subheader("비닐하우스 풍하중 계산 Agent")
 
 house_type = st.selectbox(
     "온실 형식",
@@ -58,25 +107,44 @@ wind_speed = st.number_input(
     value=30.0
 )
 
+external_cp = st.number_input(
+    "외압계수 Cpe",
+    value=-0.7
+)
+
 internal_cp = st.number_input(
     "내압계수 Cpi",
     value=-0.2
 )
 
-if st.button("LangGraph 실행"):
+rafter_spacing = st.number_input(
+    "서까래 간격 (m)",
+    value=0.6
+)
+
+if st.button("풍하중 Agent 실행"):
     app = build_graph()
 
     input_state = {
         "house_type": house_type,
         "wind_speed": wind_speed,
+        "external_cp": external_cp,
         "internal_cp": internal_cp,
-        "result_text": ""
+        "rafter_spacing": rafter_spacing,
+        "input_check_result": "",
+        "wind_result": {},
+        "summary_text": ""
     }
 
     result = app.invoke(input_state)
 
-    st.success("LangGraph 실행 완료")
-    st.text(result["result_text"])
+    st.success(result["input_check_result"])
+
+    st.subheader("풍하중 계산 결과")
+    st.write(result["wind_result"])
+
+    st.subheader("결과 요약")
+    st.write(result["summary_text"])
 
 st.set_page_config(page_title="구조설계 도우미", layout="wide")
 
