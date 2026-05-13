@@ -11,36 +11,18 @@ st.set_page_config(
 )
 
 st.title("비닐하우스 하중계산 및 예비설계 Agent")
-st.write("하중계산과 GHModeler형 워크시트 예비설계 기능을 수행하는 예시 프로그램입니다.")
+st.write("하중계산과 GHModeler형 예비설계 워크시트 기능을 수행하는 예시 프로그램입니다.")
 
 
 # =====================================================
 # 기본값 설정
 # =====================================================
 DEFAULTS = {
-    # 하중계산 기본값
-    "house_type": "10-단동-1형",
-    "wind_speed": 30.0,
-    "external_cp": -0.70,
-    "internal_cp": -0.20,
-    "rafter_spacing": 0.60,
-
-    # 예비설계 기본값
-    "crop": "딸기",
-    "area_m2": 1000.0,
-    "house_width": 8.0,
-    "house_length": 125.0,
-    "house_height": 4.0,
-    "bed_count": 6,
-    "bed_width": 1.2,
-    "side_purlin_count": 3,
-    "roof_purlin_count": 4,
-    "rafter_diameter": 31.8,
-    "rafter_thickness": 1.5,
-    "purlin_diameter": 25.4,
-    "purlin_thickness": 1.5,
-    "pipe_unit_price": 1800.0,
-    "vinyl_unit_price": 2500.0,
+    "load_house_type": "10-단동-1형",
+    "load_wind_speed": 30.0,
+    "load_external_cp": -0.70,
+    "load_internal_cp": -0.20,
+    "load_rafter_spacing": 0.60,
 }
 
 for k, v in DEFAULTS.items():
@@ -52,13 +34,7 @@ for k, v in DEFAULTS.items():
 # 함수 1. 풍하중 계산
 # =====================================================
 def calculate_wind_load(wind_speed, external_cp, internal_cp, rafter_spacing):
-    """
-    풍하중 계산
-    q = 1/2 * rho * V^2
-    p = q * (Cpe - Cpi)
-    w = p * 서까래 간격
-    """
-    rho = 1.225  # kg/m3, 공기밀도
+    rho = 1.225  # kg/m3
 
     q = 0.5 * rho * wind_speed ** 2
     net_cp = external_cp - internal_cp
@@ -81,11 +57,6 @@ def calculate_wind_load(wind_speed, external_cp, internal_cp, rafter_spacing):
 # 함수 2. 파이프 단면적 계산
 # =====================================================
 def pipe_area_m2(diameter_mm, thickness_mm):
-    """
-    원형 강관 단면적 계산
-    diameter_mm: 외경(mm)
-    thickness_mm: 두께(mm)
-    """
     D = diameter_mm / 1000
     t = thickness_mm / 1000
     d = D - 2 * t
@@ -116,102 +87,6 @@ def calculate_preliminary_design(
     pipe_unit_price,
     vinyl_unit_price,
 ):
-    # =====================================================
-# 작물별 기본 설계 추천 DB
-# =====================================================
-
-
-def find_crop_design(crop):
-    """
-    입력 작물명에 해당하는 기본 설계값 반환
-    등록되지 않은 작물은 딸기 기준 사용
-    """
-    for key in CROP_DESIGN_DB.keys():
-        if key in crop:
-            return CROP_DESIGN_DB[key], key
-
-    return CROP_DESIGN_DB["딸기"], "딸기"
-
-
-def find_region_load(region):
-    """
-    입력 지역명에 해당하는 기본풍속/적설 조건 반환
-    등록되지 않은 지역은 기본값 사용
-    """
-    for key in REGION_LOAD_DB.keys():
-        if key in region:
-            return REGION_LOAD_DB[key], key
-
-    return REGION_LOAD_DB["기본"], "기본"
-
-
-def recommend_design_from_basic_inputs(region, crop, house_width):
-    """
-    사용자가 지역, 작물, 폭만 입력했을 때
-    온실 길이, 높이, 서까래 간격, 부재 규격, 하중조건을 자동 추천
-    """
-    crop_data, crop_key = find_crop_design(crop)
-    region_data, region_key = find_region_load(region)
-
-    target_area = crop_data["default_area_m2"]
-    house_length = round(target_area / house_width, 1)
-
-    house_height = crop_data["house_height"]
-    greenhouse_type = crop_data["greenhouse_type"]
-    rafter_spacing = crop_data["rafter_spacing"]
-
-    rafter_diameter = crop_data["rafter_diameter"]
-    rafter_thickness = crop_data["rafter_thickness"]
-    purlin_diameter = crop_data["purlin_diameter"]
-    purlin_thickness = crop_data["purlin_thickness"]
-
-    basic_wind_speed = region_data["basic_wind_speed"]
-    snow_load = region_data["snow_load"]
-
-    # 강풍 또는 적설이 큰 지역이면 보수적으로 자동 보강
-    if basic_wind_speed >= 35 or snow_load >= 0.40:
-        greenhouse_type = "보강아치형"
-        rafter_spacing = min(rafter_spacing, 0.50)
-        rafter_diameter = max(rafter_diameter, 31.8)
-        rafter_thickness = max(rafter_thickness, 1.7)
-
-    # 외압/내압계수 임시 추천
-    # 실제 적용 시에는 기준표 DB로 교체하는 것이 좋음
-    if greenhouse_type == "보강아치형":
-        external_cp = -0.70
-        internal_cp = -0.20
-    elif greenhouse_type == "연동형":
-        external_cp = -0.80
-        internal_cp = -0.20
-    else:
-        external_cp = -0.70
-        internal_cp = -0.20
-
-    return {
-        "input_region": region,
-        "matched_region": region_key,
-        "region_note": region_data["region_note"],
-        "input_crop": crop,
-        "matched_crop": crop_key,
-        "target_area": target_area,
-        "house_width": house_width,
-        "house_length": house_length,
-        "house_height": house_height,
-        "greenhouse_type": greenhouse_type,
-        "bed_count": crop_data["bed_count"],
-        "bed_width": crop_data["bed_width"],
-        "rafter_spacing": rafter_spacing,
-        "side_purlin_count": crop_data["side_purlin_count"],
-        "roof_purlin_count": crop_data["roof_purlin_count"],
-        "rafter_diameter": rafter_diameter,
-        "rafter_thickness": rafter_thickness,
-        "purlin_diameter": purlin_diameter,
-        "purlin_thickness": purlin_thickness,
-        "basic_wind_speed": basic_wind_speed,
-        "snow_load": snow_load,
-        "external_cp": external_cp,
-        "internal_cp": internal_cp,
-    }
     # 1) 온실 크기
     floor_area = house_width * house_length
     volume = floor_area * house_height
@@ -277,6 +152,10 @@ def recommend_design_from_basic_inputs(region, crop, house_width):
         "total_cost": total_cost,
     }
 
+
+# =====================================================
+# 작물별 기본 설계 추천 DB
+# =====================================================
 CROP_DESIGN_DB = {
     "딸기": {
         "default_area_m2": 1000.0,
@@ -350,9 +229,10 @@ CROP_DESIGN_DB = {
     },
 }
 
+
 # =====================================================
 # 지역별 하중 추천 DB
-# 지금은 예시값. 나중에 지역별 기본풍속/적설하중 자료로 교체 가능
+# 현재는 예시값. 나중에 실제 기준풍속/적설하중 DB로 교체 가능
 # =====================================================
 REGION_LOAD_DB = {
     "대구": {
@@ -387,6 +267,92 @@ REGION_LOAD_DB = {
     },
 }
 
+
+# =====================================================
+# 함수 4. 작물 기준 찾기
+# =====================================================
+def find_crop_design(crop):
+    for key in CROP_DESIGN_DB.keys():
+        if key in crop:
+            return CROP_DESIGN_DB[key], key
+
+    return CROP_DESIGN_DB["딸기"], "딸기"
+
+
+# =====================================================
+# 함수 5. 지역 기준 찾기
+# =====================================================
+def find_region_load(region):
+    for key in REGION_LOAD_DB.keys():
+        if key in region:
+            return REGION_LOAD_DB[key], key
+
+    return REGION_LOAD_DB["기본"], "기본"
+
+
+# =====================================================
+# 함수 6. 지역 + 작물 + 폭 기반 자동 추천
+# =====================================================
+def recommend_design_from_basic_inputs(region, crop, house_width):
+    crop_data, crop_key = find_crop_design(crop)
+    region_data, region_key = find_region_load(region)
+
+    target_area = crop_data["default_area_m2"]
+    house_length = round(target_area / house_width, 1)
+
+    greenhouse_type = crop_data["greenhouse_type"]
+    rafter_spacing = crop_data["rafter_spacing"]
+
+    rafter_diameter = crop_data["rafter_diameter"]
+    rafter_thickness = crop_data["rafter_thickness"]
+    purlin_diameter = crop_data["purlin_diameter"]
+    purlin_thickness = crop_data["purlin_thickness"]
+
+    basic_wind_speed = region_data["basic_wind_speed"]
+    snow_load = region_data["snow_load"]
+
+    # 강풍 또는 적설 조건이면 보수적으로 자동 보강
+    if basic_wind_speed >= 35 or snow_load >= 0.40:
+        greenhouse_type = "보강아치형"
+        rafter_spacing = min(rafter_spacing, 0.50)
+        rafter_diameter = max(rafter_diameter, 31.8)
+        rafter_thickness = max(rafter_thickness, 1.7)
+
+    # 풍압계수 임시 추천
+    if greenhouse_type == "연동형":
+        external_cp = -0.80
+        internal_cp = -0.20
+    else:
+        external_cp = -0.70
+        internal_cp = -0.20
+
+    return {
+        "input_region": region,
+        "matched_region": region_key,
+        "region_note": region_data["region_note"],
+        "input_crop": crop,
+        "matched_crop": crop_key,
+        "target_area": target_area,
+        "house_width": house_width,
+        "house_length": house_length,
+        "house_height": crop_data["house_height"],
+        "greenhouse_type": greenhouse_type,
+        "bed_count": crop_data["bed_count"],
+        "bed_width": crop_data["bed_width"],
+        "rafter_spacing": rafter_spacing,
+        "side_purlin_count": crop_data["side_purlin_count"],
+        "roof_purlin_count": crop_data["roof_purlin_count"],
+        "rafter_diameter": rafter_diameter,
+        "rafter_thickness": rafter_thickness,
+        "purlin_diameter": purlin_diameter,
+        "purlin_thickness": purlin_thickness,
+        "basic_wind_speed": basic_wind_speed,
+        "snow_load": snow_load,
+        "external_cp": external_cp,
+        "internal_cp": internal_cp,
+    }
+
+
 # =====================================================
 # 탭 구성
 # =====================================================
@@ -409,34 +375,34 @@ with tab_load:
         house_type = st.selectbox(
             "온실 형식",
             ["10-단동-1형", "보강아치형", "연동형", "기타"],
-            key="house_type"
+            key="load_house_type"
         )
 
         wind_speed = st.number_input(
             "기본풍속 V (m/s)",
             min_value=0.0,
             step=1.0,
-            key="wind_speed"
+            key="load_wind_speed"
         )
 
         rafter_spacing = st.number_input(
             "서까래 간격 (m)",
             min_value=0.1,
             step=0.05,
-            key="rafter_spacing"
+            key="load_rafter_spacing"
         )
 
     with col2:
         external_cp = st.number_input(
             "외압계수 Cpe",
             step=0.05,
-            key="external_cp"
+            key="load_external_cp"
         )
 
         internal_cp = st.number_input(
             "내압계수 Cpi",
             step=0.05,
-            key="internal_cp"
+            key="load_internal_cp"
         )
 
     if st.button("풍하중 계산 실행"):
@@ -483,12 +449,8 @@ with tab_load:
 # 탭 2. 예비설계 워크시트
 # =====================================================
 with tab_worksheet:
-    # =====================================================
-# 탭 2. 예비설계 워크시트
-# =====================================================
-with tab_worksheet:
     st.header("예비설계 워크시트")
-    st.write("지역, 작물, 온실 폭만 입력하면 온실 길이, 높이, 서까래 간격, 부재 규격, 개략 물량과 비용을 자동 추천합니다.")
+    st.write("지역, 작물, 온실 폭만 입력하면 온실 크기, 부재 규격, 하중조건, 개략 물량과 비용을 자동 추천합니다.")
 
     st.subheader("1. 기본 입력")
 
@@ -629,7 +591,7 @@ with tab_worksheet:
                 "토지이용률",
                 "서까래 개수",
                 "계산상 온실 길이",
-                "입력 길이와 차이",
+                "추천 길이와 차이",
                 "전체 도리 개수",
                 "서까래 1개 길이",
                 "서까래 총길이",
@@ -694,11 +656,11 @@ with tab_worksheet:
         st.subheader("하중계산 탭으로 적용")
 
         if st.button("추천 하중조건을 하중계산에 적용"):
-            st.session_state["house_type"] = rec["greenhouse_type"]
-            st.session_state["wind_speed"] = rec["basic_wind_speed"]
-            st.session_state["external_cp"] = rec["external_cp"]
-            st.session_state["internal_cp"] = rec["internal_cp"]
-            st.session_state["rafter_spacing"] = rec["rafter_spacing"]
+            st.session_state["load_house_type"] = rec["greenhouse_type"]
+            st.session_state["load_wind_speed"] = rec["basic_wind_speed"]
+            st.session_state["load_external_cp"] = rec["external_cp"]
+            st.session_state["load_internal_cp"] = rec["internal_cp"]
+            st.session_state["load_rafter_spacing"] = rec["rafter_spacing"]
 
             st.success("추천값이 하중계산 탭에 적용되었습니다.")
             st.rerun()
