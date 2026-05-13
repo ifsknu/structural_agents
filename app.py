@@ -119,115 +119,6 @@ def calculate_preliminary_design(
     # =====================================================
 # 작물별 기본 설계 추천 DB
 # =====================================================
-CROP_DESIGN_DB = {
-    "딸기": {
-        "default_area_m2": 1000.0,
-        "house_height": 4.0,
-        "bed_count": 6,
-        "bed_width": 1.2,
-        "greenhouse_type": "10-단동-1형",
-        "rafter_spacing": 0.60,
-        "side_purlin_count": 3,
-        "roof_purlin_count": 4,
-        "rafter_diameter": 31.8,
-        "rafter_thickness": 1.5,
-        "purlin_diameter": 25.4,
-        "purlin_thickness": 1.5,
-    },
-    "토마토": {
-        "default_area_m2": 1200.0,
-        "house_height": 4.5,
-        "bed_count": 5,
-        "bed_width": 1.5,
-        "greenhouse_type": "보강아치형",
-        "rafter_spacing": 0.50,
-        "side_purlin_count": 4,
-        "roof_purlin_count": 4,
-        "rafter_diameter": 31.8,
-        "rafter_thickness": 1.7,
-        "purlin_diameter": 25.4,
-        "purlin_thickness": 1.5,
-    },
-    "오이": {
-        "default_area_m2": 1000.0,
-        "house_height": 4.5,
-        "bed_count": 5,
-        "bed_width": 1.4,
-        "greenhouse_type": "보강아치형",
-        "rafter_spacing": 0.50,
-        "side_purlin_count": 4,
-        "roof_purlin_count": 4,
-        "rafter_diameter": 31.8,
-        "rafter_thickness": 1.7,
-        "purlin_diameter": 25.4,
-        "purlin_thickness": 1.5,
-    },
-    "상추": {
-        "default_area_m2": 800.0,
-        "house_height": 3.8,
-        "bed_count": 7,
-        "bed_width": 1.0,
-        "greenhouse_type": "10-단동-1형",
-        "rafter_spacing": 0.60,
-        "side_purlin_count": 3,
-        "roof_purlin_count": 3,
-        "rafter_diameter": 25.4,
-        "rafter_thickness": 1.5,
-        "purlin_diameter": 22.2,
-        "purlin_thickness": 1.5,
-    },
-    "파프리카": {
-        "default_area_m2": 1500.0,
-        "house_height": 5.0,
-        "bed_count": 5,
-        "bed_width": 1.5,
-        "greenhouse_type": "보강아치형",
-        "rafter_spacing": 0.50,
-        "side_purlin_count": 4,
-        "roof_purlin_count": 5,
-        "rafter_diameter": 31.8,
-        "rafter_thickness": 1.7,
-        "purlin_diameter": 25.4,
-        "purlin_thickness": 1.5,
-    },
-}
-
-# =====================================================
-# 지역별 하중 추천 DB
-# 지금은 예시값. 나중에 지역별 기본풍속/적설하중 자료로 교체 가능
-# =====================================================
-REGION_LOAD_DB = {
-    "대구": {
-        "basic_wind_speed": 30.0,
-        "snow_load": 0.30,
-        "region_note": "일반 내륙 조건",
-    },
-    "부산": {
-        "basic_wind_speed": 34.0,
-        "snow_load": 0.20,
-        "region_note": "해안 인접, 풍하중 주의",
-    },
-    "울산": {
-        "basic_wind_speed": 34.0,
-        "snow_load": 0.20,
-        "region_note": "해안 인접, 풍하중 주의",
-    },
-    "강릉": {
-        "basic_wind_speed": 36.0,
-        "snow_load": 0.40,
-        "region_note": "강풍 및 적설 검토 필요",
-    },
-    "제주": {
-        "basic_wind_speed": 40.0,
-        "snow_load": 0.10,
-        "region_note": "강풍 지역 가정",
-    },
-    "기본": {
-        "basic_wind_speed": 30.0,
-        "snow_load": 0.30,
-        "region_note": "기본 일반 지역 조건",
-    },
-}
 
 
 def find_crop_design(crop):
@@ -386,6 +277,115 @@ def recommend_design_from_basic_inputs(region, crop, house_width):
         "total_cost": total_cost,
     }
 
+CROP_DESIGN_DB = {
+    "딸기": {
+        "default_area_m2": 1000.0,
+        "house_height": 4.0,
+        "bed_count": 6,
+        "bed_width": 1.2,
+        "greenhouse_type": "10-단동-1형",
+        "rafter_spacing": 0.60,
+        "side_purlin_count": 3,
+        "roof_purlin_count": 4,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.5,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+    "토마토": {
+        "default_area_m2": 1200.0,
+        "house_height": 4.5,
+        "bed_count": 5,
+        "bed_width": 1.5,
+        "greenhouse_type": "보강아치형",
+        "rafter_spacing": 0.50,
+        "side_purlin_count": 4,
+        "roof_purlin_count": 4,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.7,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+    "오이": {
+        "default_area_m2": 1000.0,
+        "house_height": 4.5,
+        "bed_count": 5,
+        "bed_width": 1.4,
+        "greenhouse_type": "보강아치형",
+        "rafter_spacing": 0.50,
+        "side_purlin_count": 4,
+        "roof_purlin_count": 4,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.7,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+    "상추": {
+        "default_area_m2": 800.0,
+        "house_height": 3.8,
+        "bed_count": 7,
+        "bed_width": 1.0,
+        "greenhouse_type": "10-단동-1형",
+        "rafter_spacing": 0.60,
+        "side_purlin_count": 3,
+        "roof_purlin_count": 3,
+        "rafter_diameter": 25.4,
+        "rafter_thickness": 1.5,
+        "purlin_diameter": 22.2,
+        "purlin_thickness": 1.5,
+    },
+    "파프리카": {
+        "default_area_m2": 1500.0,
+        "house_height": 5.0,
+        "bed_count": 5,
+        "bed_width": 1.5,
+        "greenhouse_type": "보강아치형",
+        "rafter_spacing": 0.50,
+        "side_purlin_count": 4,
+        "roof_purlin_count": 5,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.7,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+}
+
+# =====================================================
+# 지역별 하중 추천 DB
+# 지금은 예시값. 나중에 지역별 기본풍속/적설하중 자료로 교체 가능
+# =====================================================
+REGION_LOAD_DB = {
+    "대구": {
+        "basic_wind_speed": 30.0,
+        "snow_load": 0.30,
+        "region_note": "일반 내륙 조건",
+    },
+    "부산": {
+        "basic_wind_speed": 34.0,
+        "snow_load": 0.20,
+        "region_note": "해안 인접, 풍하중 주의",
+    },
+    "울산": {
+        "basic_wind_speed": 34.0,
+        "snow_load": 0.20,
+        "region_note": "해안 인접, 풍하중 주의",
+    },
+    "강릉": {
+        "basic_wind_speed": 36.0,
+        "snow_load": 0.40,
+        "region_note": "강풍 및 적설 검토 필요",
+    },
+    "제주": {
+        "basic_wind_speed": 40.0,
+        "snow_load": 0.10,
+        "region_note": "강풍 지역 가정",
+    },
+    "기본": {
+        "basic_wind_speed": 30.0,
+        "snow_load": 0.30,
+        "region_note": "기본 일반 지역 조건",
+    },
+}
 
 # =====================================================
 # 탭 구성
