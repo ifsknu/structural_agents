@@ -116,6 +116,211 @@ def calculate_preliminary_design(
     pipe_unit_price,
     vinyl_unit_price,
 ):
+    # =====================================================
+# 작물별 기본 설계 추천 DB
+# =====================================================
+CROP_DESIGN_DB = {
+    "딸기": {
+        "default_area_m2": 1000.0,
+        "house_height": 4.0,
+        "bed_count": 6,
+        "bed_width": 1.2,
+        "greenhouse_type": "10-단동-1형",
+        "rafter_spacing": 0.60,
+        "side_purlin_count": 3,
+        "roof_purlin_count": 4,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.5,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+    "토마토": {
+        "default_area_m2": 1200.0,
+        "house_height": 4.5,
+        "bed_count": 5,
+        "bed_width": 1.5,
+        "greenhouse_type": "보강아치형",
+        "rafter_spacing": 0.50,
+        "side_purlin_count": 4,
+        "roof_purlin_count": 4,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.7,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+    "오이": {
+        "default_area_m2": 1000.0,
+        "house_height": 4.5,
+        "bed_count": 5,
+        "bed_width": 1.4,
+        "greenhouse_type": "보강아치형",
+        "rafter_spacing": 0.50,
+        "side_purlin_count": 4,
+        "roof_purlin_count": 4,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.7,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+    "상추": {
+        "default_area_m2": 800.0,
+        "house_height": 3.8,
+        "bed_count": 7,
+        "bed_width": 1.0,
+        "greenhouse_type": "10-단동-1형",
+        "rafter_spacing": 0.60,
+        "side_purlin_count": 3,
+        "roof_purlin_count": 3,
+        "rafter_diameter": 25.4,
+        "rafter_thickness": 1.5,
+        "purlin_diameter": 22.2,
+        "purlin_thickness": 1.5,
+    },
+    "파프리카": {
+        "default_area_m2": 1500.0,
+        "house_height": 5.0,
+        "bed_count": 5,
+        "bed_width": 1.5,
+        "greenhouse_type": "보강아치형",
+        "rafter_spacing": 0.50,
+        "side_purlin_count": 4,
+        "roof_purlin_count": 5,
+        "rafter_diameter": 31.8,
+        "rafter_thickness": 1.7,
+        "purlin_diameter": 25.4,
+        "purlin_thickness": 1.5,
+    },
+}
+
+# =====================================================
+# 지역별 하중 추천 DB
+# 지금은 예시값. 나중에 지역별 기본풍속/적설하중 자료로 교체 가능
+# =====================================================
+REGION_LOAD_DB = {
+    "대구": {
+        "basic_wind_speed": 30.0,
+        "snow_load": 0.30,
+        "region_note": "일반 내륙 조건",
+    },
+    "부산": {
+        "basic_wind_speed": 34.0,
+        "snow_load": 0.20,
+        "region_note": "해안 인접, 풍하중 주의",
+    },
+    "울산": {
+        "basic_wind_speed": 34.0,
+        "snow_load": 0.20,
+        "region_note": "해안 인접, 풍하중 주의",
+    },
+    "강릉": {
+        "basic_wind_speed": 36.0,
+        "snow_load": 0.40,
+        "region_note": "강풍 및 적설 검토 필요",
+    },
+    "제주": {
+        "basic_wind_speed": 40.0,
+        "snow_load": 0.10,
+        "region_note": "강풍 지역 가정",
+    },
+    "기본": {
+        "basic_wind_speed": 30.0,
+        "snow_load": 0.30,
+        "region_note": "기본 일반 지역 조건",
+    },
+}
+
+
+def find_crop_design(crop):
+    """
+    입력 작물명에 해당하는 기본 설계값 반환
+    등록되지 않은 작물은 딸기 기준 사용
+    """
+    for key in CROP_DESIGN_DB.keys():
+        if key in crop:
+            return CROP_DESIGN_DB[key], key
+
+    return CROP_DESIGN_DB["딸기"], "딸기"
+
+
+def find_region_load(region):
+    """
+    입력 지역명에 해당하는 기본풍속/적설 조건 반환
+    등록되지 않은 지역은 기본값 사용
+    """
+    for key in REGION_LOAD_DB.keys():
+        if key in region:
+            return REGION_LOAD_DB[key], key
+
+    return REGION_LOAD_DB["기본"], "기본"
+
+
+def recommend_design_from_basic_inputs(region, crop, house_width):
+    """
+    사용자가 지역, 작물, 폭만 입력했을 때
+    온실 길이, 높이, 서까래 간격, 부재 규격, 하중조건을 자동 추천
+    """
+    crop_data, crop_key = find_crop_design(crop)
+    region_data, region_key = find_region_load(region)
+
+    target_area = crop_data["default_area_m2"]
+    house_length = round(target_area / house_width, 1)
+
+    house_height = crop_data["house_height"]
+    greenhouse_type = crop_data["greenhouse_type"]
+    rafter_spacing = crop_data["rafter_spacing"]
+
+    rafter_diameter = crop_data["rafter_diameter"]
+    rafter_thickness = crop_data["rafter_thickness"]
+    purlin_diameter = crop_data["purlin_diameter"]
+    purlin_thickness = crop_data["purlin_thickness"]
+
+    basic_wind_speed = region_data["basic_wind_speed"]
+    snow_load = region_data["snow_load"]
+
+    # 강풍 또는 적설이 큰 지역이면 보수적으로 자동 보강
+    if basic_wind_speed >= 35 or snow_load >= 0.40:
+        greenhouse_type = "보강아치형"
+        rafter_spacing = min(rafter_spacing, 0.50)
+        rafter_diameter = max(rafter_diameter, 31.8)
+        rafter_thickness = max(rafter_thickness, 1.7)
+
+    # 외압/내압계수 임시 추천
+    # 실제 적용 시에는 기준표 DB로 교체하는 것이 좋음
+    if greenhouse_type == "보강아치형":
+        external_cp = -0.70
+        internal_cp = -0.20
+    elif greenhouse_type == "연동형":
+        external_cp = -0.80
+        internal_cp = -0.20
+    else:
+        external_cp = -0.70
+        internal_cp = -0.20
+
+    return {
+        "input_region": region,
+        "matched_region": region_key,
+        "region_note": region_data["region_note"],
+        "input_crop": crop,
+        "matched_crop": crop_key,
+        "target_area": target_area,
+        "house_width": house_width,
+        "house_length": house_length,
+        "house_height": house_height,
+        "greenhouse_type": greenhouse_type,
+        "bed_count": crop_data["bed_count"],
+        "bed_width": crop_data["bed_width"],
+        "rafter_spacing": rafter_spacing,
+        "side_purlin_count": crop_data["side_purlin_count"],
+        "roof_purlin_count": crop_data["roof_purlin_count"],
+        "rafter_diameter": rafter_diameter,
+        "rafter_thickness": rafter_thickness,
+        "purlin_diameter": purlin_diameter,
+        "purlin_thickness": purlin_thickness,
+        "basic_wind_speed": basic_wind_speed,
+        "snow_load": snow_load,
+        "external_cp": external_cp,
+        "internal_cp": internal_cp,
+    }
     # 1) 온실 크기
     floor_area = house_width * house_length
     volume = floor_area * house_height
@@ -278,129 +483,41 @@ with tab_load:
 # 탭 2. 예비설계 워크시트
 # =====================================================
 with tab_worksheet:
+    # =====================================================
+# 탭 2. 예비설계 워크시트
+# =====================================================
+with tab_worksheet:
     st.header("예비설계 워크시트")
-    st.write("온실 규모, 재배면적, 서까래/도리 개수, 파이프 및 비닐 물량, 개략 비용을 산정합니다.")
+    st.write("지역, 작물, 온실 폭만 입력하면 온실 길이, 높이, 서까래 간격, 부재 규격, 개략 물량과 비용을 자동 추천합니다.")
 
-    st.subheader("1. 비닐온실 크기")
+    st.subheader("1. 기본 입력")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        house_width = st.number_input(
-            "온실 폭 (m)",
-            min_value=1.0,
-            step=0.5,
-            key="house_width"
+        input_region = st.text_input(
+            "지역",
+            value="대구 북구",
+            placeholder="예: 대구 북구, 부산 강서구, 제주 서귀포"
         )
 
     with col2:
-        house_length = st.number_input(
-            "온실 길이 (m)",
-            min_value=1.0,
-            step=1.0,
-            key="house_length"
-        )
-
-    with col3:
-        house_height = st.number_input(
-            "온실 높이 (m)",
-            min_value=1.0,
-            step=0.1,
-            key="house_height"
-        )
-
-    st.subheader("2. 재배 면적")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        crop = st.text_input(
+        input_crop = st.text_input(
             "작물",
-            key="crop"
-        )
-
-    with col2:
-        bed_count = st.number_input(
-            "이랑 개수",
-            min_value=1,
-            step=1,
-            key="bed_count"
+            value="딸기",
+            placeholder="예: 딸기, 토마토, 오이, 상추, 파프리카"
         )
 
     with col3:
-        bed_width = st.number_input(
-            "이랑 폭 (m)",
-            min_value=0.1,
-            step=0.1,
-            key="bed_width"
+        input_width = st.number_input(
+            "온실 폭 (m)",
+            min_value=3.0,
+            max_value=20.0,
+            value=8.0,
+            step=0.5
         )
 
-    st.subheader("3. 시설 구조")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        ws_rafter_spacing = st.number_input(
-            "워크시트용 서까래 간격 (m)",
-            min_value=0.1,
-            step=0.05,
-            value=st.session_state["rafter_spacing"],
-            key="ws_rafter_spacing"
-        )
-
-    with col2:
-        side_purlin_count = st.number_input(
-            "측면 도리 개수",
-            min_value=0,
-            step=1,
-            key="side_purlin_count"
-        )
-
-    with col3:
-        roof_purlin_count = st.number_input(
-            "지붕 도리 개수",
-            min_value=0,
-            step=1,
-            key="roof_purlin_count"
-        )
-
-    st.subheader("4. 부재 규격")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        rafter_diameter = st.number_input(
-            "서까래 외경 (mm)",
-            min_value=1.0,
-            step=0.1,
-            key="rafter_diameter"
-        )
-
-    with col2:
-        rafter_thickness = st.number_input(
-            "서까래 두께 (mm)",
-            min_value=0.1,
-            step=0.1,
-            key="rafter_thickness"
-        )
-
-    with col3:
-        purlin_diameter = st.number_input(
-            "도리 외경 (mm)",
-            min_value=1.0,
-            step=0.1,
-            key="purlin_diameter"
-        )
-
-    with col4:
-        purlin_thickness = st.number_input(
-            "도리 두께 (mm)",
-            min_value=0.1,
-            step=0.1,
-            key="purlin_thickness"
-        )
-
-    st.subheader("5. 단가 입력")
+    st.subheader("2. 단가 입력")
 
     col1, col2 = st.columns(2)
 
@@ -408,48 +525,104 @@ with tab_worksheet:
         pipe_unit_price = st.number_input(
             "파이프 단가 (원/kg)",
             min_value=0.0,
-            step=100.0,
-            key="pipe_unit_price"
+            value=1800.0,
+            step=100.0
         )
 
     with col2:
         vinyl_unit_price = st.number_input(
             "비닐 단가 (원/m²)",
             min_value=0.0,
-            step=100.0,
-            key="vinyl_unit_price"
+            value=2500.0,
+            step=100.0
         )
 
-    if st.button("예비설계 계산 실행"):
+    if st.button("설계안 자동 추천"):
+        recommended = recommend_design_from_basic_inputs(
+            region=input_region,
+            crop=input_crop,
+            house_width=input_width
+        )
+
         worksheet_result = calculate_preliminary_design(
-            house_width=house_width,
-            house_length=house_length,
-            house_height=house_height,
-            bed_count=bed_count,
-            bed_width=bed_width,
-            rafter_spacing=ws_rafter_spacing,
-            side_purlin_count=side_purlin_count,
-            roof_purlin_count=roof_purlin_count,
-            rafter_diameter=rafter_diameter,
-            rafter_thickness=rafter_thickness,
-            purlin_diameter=purlin_diameter,
-            purlin_thickness=purlin_thickness,
+            house_width=recommended["house_width"],
+            house_length=recommended["house_length"],
+            house_height=recommended["house_height"],
+            bed_count=recommended["bed_count"],
+            bed_width=recommended["bed_width"],
+            rafter_spacing=recommended["rafter_spacing"],
+            side_purlin_count=recommended["side_purlin_count"],
+            roof_purlin_count=recommended["roof_purlin_count"],
+            rafter_diameter=recommended["rafter_diameter"],
+            rafter_thickness=recommended["rafter_thickness"],
+            purlin_diameter=recommended["purlin_diameter"],
+            purlin_thickness=recommended["purlin_thickness"],
             pipe_unit_price=pipe_unit_price,
             vinyl_unit_price=vinyl_unit_price,
         )
 
+        st.session_state["recommended_design"] = recommended
         st.session_state["worksheet_result"] = worksheet_result
 
-    if "worksheet_result" in st.session_state:
+    if "recommended_design" in st.session_state and "worksheet_result" in st.session_state:
+        rec = st.session_state["recommended_design"]
         result = st.session_state["worksheet_result"]
 
-        st.success("예비설계 계산이 완료되었습니다.")
+        st.success("설계안 자동 추천이 완료되었습니다.")
 
-        st.subheader("계산 결과 요약")
+        st.subheader("추천 설계안")
+
+        design_df = pd.DataFrame({
+            "항목": [
+                "입력 지역",
+                "적용 지역 조건",
+                "지역 조건 설명",
+                "입력 작물",
+                "적용 작물 기준",
+                "추천 온실 형식",
+                "목표 재배 규모",
+                "추천 온실 폭",
+                "추천 온실 길이",
+                "추천 온실 높이",
+                "추천 서까래 간격",
+                "측면 도리 개수",
+                "지붕 도리 개수",
+                "서까래 규격",
+                "도리 규격",
+                "기본풍속",
+                "적설하중",
+                "외압계수 Cpe",
+                "내압계수 Cpi",
+            ],
+            "추천값": [
+                rec["input_region"],
+                rec["matched_region"],
+                rec["region_note"],
+                rec["input_crop"],
+                rec["matched_crop"],
+                rec["greenhouse_type"],
+                f'{rec["target_area"]:.1f} m²',
+                f'{rec["house_width"]:.1f} m',
+                f'{rec["house_length"]:.1f} m',
+                f'{rec["house_height"]:.1f} m',
+                f'{rec["rafter_spacing"]:.2f} m',
+                f'{rec["side_purlin_count"]} 개',
+                f'{rec["roof_purlin_count"]} 개',
+                f'Ø{rec["rafter_diameter"]} × {rec["rafter_thickness"]} mm',
+                f'Ø{rec["purlin_diameter"]} × {rec["purlin_thickness"]} mm',
+                f'{rec["basic_wind_speed"]:.1f} m/s',
+                f'{rec["snow_load"]:.2f} kN/m²',
+                rec["external_cp"],
+                rec["internal_cp"],
+            ]
+        })
+
+        st.table(design_df)
+
+        st.subheader("예비설계 계산 결과")
 
         summary_df = pd.DataFrame({
             "항목": [
-                "작물",
                 "온실 바닥면적",
                 "온실 체적",
                 "재배면적",
@@ -468,7 +641,6 @@ with tab_worksheet:
                 "개략 총비용",
             ],
             "값": [
-                crop,
                 f'{result["floor_area"]:.1f} m²',
                 f'{result["volume"]:.1f} m³',
                 f'{result["cultivation_area"]:.1f} m²',
@@ -491,10 +663,10 @@ with tab_worksheet:
         st.table(summary_df)
 
         if result["land_use_ratio"] > 100:
-            st.error("재배면적이 온실 전체면적을 초과합니다. 이랑 개수 또는 이랑 폭을 줄여야 합니다.")
+            st.error("재배면적이 온실 전체면적을 초과합니다. 작물별 이랑 조건을 수정해야 합니다.")
 
         if abs(result["length_error"]) > 0.05:
-            st.warning("서까래 간격으로 계산된 온실 길이가 입력한 온실 길이와 다릅니다.")
+            st.warning("서까래 간격으로 계산된 온실 길이가 추천 온실 길이와 약간 다릅니다.")
 
         st.subheader("자재별 상세 결과")
 
@@ -519,7 +691,14 @@ with tab_worksheet:
 
         st.table(material_df)
 
-        if st.button("예비설계 서까래 간격을 하중계산에 적용"):
-            st.session_state["rafter_spacing"] = ws_rafter_spacing
-            st.success("서까래 간격이 하중계산 탭에 적용되었습니다.")
+        st.subheader("하중계산 탭으로 적용")
+
+        if st.button("추천 하중조건을 하중계산에 적용"):
+            st.session_state["house_type"] = rec["greenhouse_type"]
+            st.session_state["wind_speed"] = rec["basic_wind_speed"]
+            st.session_state["external_cp"] = rec["external_cp"]
+            st.session_state["internal_cp"] = rec["internal_cp"]
+            st.session_state["rafter_spacing"] = rec["rafter_spacing"]
+
+            st.success("추천값이 하중계산 탭에 적용되었습니다.")
             st.rerun()
