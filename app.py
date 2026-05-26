@@ -662,7 +662,7 @@ with tab1:
 
     st.divider()
 
-        st.subheader("하중 조건 입력")
+    st.subheader("하중 조건 입력")
 
     col4, col5, col6 = st.columns(3)
 
@@ -696,10 +696,11 @@ with tab1:
     st.info(
         "외압계수와 내압계수는 사용자가 직접 입력하지 않고, 풍향 조건과 개방 조건을 바탕으로 Agent가 자동 선정합니다."
     )
+
     if st.button("다중에이전트 설계 실행", type="primary"):
         app = build_graph()
 
-                input_state = {
+        input_state = {
             "region": region,
             "crop": crop,
             "house_type": house_type,
@@ -739,7 +740,6 @@ with tab1:
 
         st.subheader("최종 요약")
         st.write(st.session_state["design_result"]["summary_text"])
-
 
 # =========================================================
 # 11. 설계도면 탭
