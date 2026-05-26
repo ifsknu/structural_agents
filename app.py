@@ -662,9 +662,9 @@ with tab1:
 
     st.divider()
 
-    st.subheader("하중 조건 입력")
+        st.subheader("하중 조건 입력")
 
-    col4, col5, col6, col7 = st.columns(4)
+    col4, col5, col6 = st.columns(3)
 
     with col4:
         basic_wind_speed = st.number_input(
@@ -676,32 +676,30 @@ with tab1:
 
     with col5:
         wind_direction = st.selectbox(
-    "풍향 조건",
-    ["정면 풍향", "측면 풍향"]
-)
+            "풍향 조건",
+            ["정면 풍향", "측면 풍향"]
+        )
 
     with col6:
         opening_type = st.selectbox(
-    "개방 조건",
-    ["일반 밀폐형", "부분개방형", "개방형"]
-)
-
-     with col7:
-        ground_snow_load = st.number_input(
-            "지상적설하중 [kN/m²]",
-            min_value=0.0,
-            value=0.5,
-            step=0.1
+            "개방 조건",
+            ["일반 밀폐형", "부분개방형", "개방형"]
         )
 
-    st.info(
-        "현재 버전은 예비설계용입니다. 외압계수, 내압계수, 적설하중은 사용자가 직접 입력하는 방식으로 구성했습니다."
+    ground_snow_load = st.number_input(
+        "지상적설하중 [kN/m²]",
+        min_value=0.0,
+        value=0.5,
+        step=0.1
     )
 
+    st.info(
+        "외압계수와 내압계수는 사용자가 직접 입력하지 않고, 풍향 조건과 개방 조건을 바탕으로 Agent가 자동 선정합니다."
+    )
     if st.button("다중에이전트 설계 실행", type="primary"):
         app = build_graph()
 
-        input_state = {
+                input_state = {
             "region": region,
             "crop": crop,
             "house_type": house_type,
@@ -714,16 +712,16 @@ with tab1:
 
             "basic_wind_speed": basic_wind_speed,
             "wind_direction": wind_direction,
-"opening_type": opening_type,
-
-"external_cp": 0.0,
-"internal_cp": 0.0,
-"net_cp": 0.0,
-"coeff_result": {},
+            "opening_type": opening_type,
             "ground_snow_load": ground_snow_load,
+
+            "external_cp": 0.0,
+            "internal_cp": 0.0,
+            "net_cp": 0.0,
 
             "preliminary_result": {},
             "drawing_svg": "",
+            "coeff_result": {},
             "load_result": {},
             "analysis_result": {},
             "safety_result": {},
