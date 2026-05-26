@@ -1,2 +1,3 @@
 streamlit
 langgraph
+plotly
