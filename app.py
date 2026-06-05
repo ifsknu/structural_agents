@@ -682,12 +682,12 @@ if st.session_state["last_result"] is not None:
 
     st.divider()
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "① 조건 추출 결과",
-    "② 추천안",
-    "③ 3D 설계모델",
-    "④ 구조해석 모듈"
-])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "① 조건 추출 결과",
+        "② 추천안",
+        "③ 3D 설계모델",
+        "④ 구조해석 모듈"
+    ])
 
     with tab1:
         st.subheader("자연어 입력 조건 추출 결과")
@@ -736,4 +736,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
                 scrolling=True
             )
         else:
-            st.warning("index.html 파일을 찾을 수 없습니다. app.py와 같은 위치에 index.html을 업로드하세요.")
+            st.warning(
+                "index.html 파일을 찾을 수 없습니다. "
+                "app.py와 같은 위치에 index.html을 업로드하세요."
+            )
