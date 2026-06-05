@@ -2,6 +2,9 @@ import re
 import math
 import streamlit as st
 import plotly.graph_objects as go
+import streamlit.components.v1 as components
+from pathlib import Path
+
 from typing import TypedDict, Dict, Any, List
 from langgraph.graph import StateGraph, END
 
@@ -679,11 +682,12 @@ if st.session_state["last_result"] is not None:
 
     st.divider()
 
-    tab1, tab2, tab3 = st.tabs([
-        "① 조건 추출 결과",
-        "② 추천안",
-        "③ 3D 설계모델"
-    ])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "① 조건 추출 결과",
+    "② 추천안",
+    "③ 3D 설계모델",
+    "④ 구조해석 모듈"
+])
 
     with tab1:
         st.subheader("자연어 입력 조건 추출 결과")
@@ -717,3 +721,19 @@ if st.session_state["last_result"] is not None:
             )
         else:
             st.info("추천안이 생성되면 3D 설계모델이 표시됩니다.")
+
+    with tab4:
+        st.subheader("구조해석 모듈")
+
+        html_path = Path("index.html")
+
+        if html_path.exists():
+            html_code = html_path.read_text(encoding="utf-8")
+
+            components.html(
+                html_code,
+                height=1200,
+                scrolling=True
+            )
+        else:
+            st.warning("index.html 파일을 찾을 수 없습니다. app.py와 같은 위치에 index.html을 업로드하세요.")
