@@ -877,31 +877,32 @@ def set_load_defaults(result):
 
     current_signature = result["user_prompt"]
 
-    if st.session_state.get("load_signature") == current_signature:
-        return
+    # 새로운 추천안이 생성된 경우에만 초기값 재설정
+    if st.session_state.get("load_signature") != current_signature:
+        region = rec["지역"]
 
-    region = rec["지역"]
+        default_V = 30.0
+        default_snow = 0.5
 
-    default_V = 30.0
-    default_snow = 0.5
+        if region in ["포항", "부산", "울산", "제주", "서귀포", "제주시"]:
+            default_V = 35.0
 
-    if region in ["포항", "부산", "울산", "제주", "서귀포", "제주시"]:
-        default_V = 35.0
+        if region in ["강원", "평창", "대관령"]:
+            default_snow = 1.2
+        elif region in ["제주", "서귀포", "제주시"]:
+            default_snow = 0.3
 
-    if region in ["강원", "평창", "대관령"]:
-        default_snow = 1.2
-    elif region in ["제주", "서귀포", "제주시"]:
-        default_snow = 0.3
+        st.session_state["load_basic_wind_speed"] = default_V
+        st.session_state["load_dead_load"] = 0.15
+        st.session_state["load_ground_snow_load"] = default_snow
+        st.session_state["load_snow_shape_factor"] = 0.8
+        st.session_state["load_frame_spacing"] = rec["프레임 간격 [m]"]
 
-    st.session_state["load_basic_wind_speed"] = default_V
-    st.session_state["load_dead_load"] = 0.15
-    st.session_state["load_ground_snow_load"] = default_snow
-    st.session_state["load_snow_shape_factor"] = 0.8
-    st.session_state["load_frame_spacing"] = rec["프레임 간격 [m]"]
-    st.session_state["load_cpe"] = rec["대표 지붕부 외압계수 Cpe"]
-    st.session_state["load_cpi"] = rec["내압계수 Cpi"]
-    st.session_state["load_signature"] = current_signature
+        # 여기서 추천안의 풍압계수를 하중 조건 초기값으로 넣음
+        st.session_state["load_cpe"] = float(rec["대표 지붕부 외압계수 Cpe"])
+        st.session_state["load_cpi"] = float(rec["내압계수 Cpi"])
 
+        st.session_state["load_signature"] = current_signature
 
 # =========================================================
 # 10. 헤더
@@ -1197,20 +1198,61 @@ elif st.session_state["screen"] == "load":
                         key="load_frame_spacing"
                     )
 
-                    st.divider()
+                                        st.divider()
 
                     st.markdown("### 풍압계수")
+
+                    st.caption(
+                        "초기값은 2번 추천안에서 자동 선정된 외압계수와 내압계수입니다. "
+                        "필요하면 직접 수정해서 다시 계산할 수 있습니다."
+                    )
+
                     Cpe = st.number_input(
                         "외압계수 Cpe",
                         step=0.1,
+                        format="%.2f",
                         key="load_cpe"
                     )
 
                     Cpi = st.number_input(
                         "내압계수 Cpi",
                         step=0.1,
+                        format="%.2f",
                         key="load_cpi"
                     )
+
+                    net_cp_view = Cpe - Cpi
+                    st.info(f"현재 순압계수 Cpe - Cpi = {net_cp_view:.2f}")
+
+                    col_reset, col_blank = st.columns([1, 2])
+
+                    with col_reset:
+                        if st.button("추천 풍압계수 다시 불러오기", use_container_width=True):
+                            st.session_state["load_cpe"] = float(
+                                result["recommendation_result"]["대표 지붕부 외압계수 Cpe"]
+                            )
+                            st.session_state["load_cpi"] = float(
+                                result["recommendation_result"]["내압계수 Cpi"]
+                            )
+                            st.rerun()
+
+                    st.divider()
+
+                    if st.button("하중 계산 실행", type="primary", use_container_width=True):
+                        load_result = compute_load_result(
+                            V=V,
+                            dead_load=dead_load,
+                            ground_snow_load=ground_snow_load,
+                            snow_shape_factor=snow_shape_factor,
+                            frame_spacing=frame_spacing,
+                            Cpe=Cpe,
+                            Cpi=Cpi
+                        )
+
+                        st.session_state["load_result"] = load_result
+                        st.session_state["analysis_result"] = compute_structural_analysis(result, load_result)
+                        st.session_state["safety_result"] = None
+                        st.success("하중 계산이 완료되었습니다.")
 
                     if st.button("하중 계산 실행", type="primary", use_container_width=True):
                         load_result = compute_load_result(
