@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>재난 관리를 위한 소형 지붕 강관 골조 최소비용 설계 에이전트</title>
+  <style>
+    :root{
+      --bg:#f6f8fb; --panel:#ffffff; --ink:#1f2937; --muted:#6b7280;
+      --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5;
+      --red:#dc2626; --red2:#fee2e2; --amber:#d97706; --amber2:#fef3c7;
+      --gray:#e5e7eb; --line:#d1d5db; --dark:#111827;
+      --purple:#7c3aed; --purple2:#ede9fe;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+    header{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:white;padding:22px 28px;border-bottom:4px solid #93c5fd}
+    header h1{margin:0;font-size:26px;line-height:1.25}
+    header p{margin:8px 0 0;color:#dbeafe;font-size:15px}
+    .wrap{display:grid;grid-template-columns:380px minmax(560px,1fr) 420px;gap:16px;padding:16px;max-width:1680px;margin:0 auto}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 14px rgba(15,23,42,.06);overflow:hidden}
+    .card h2{font-size:18px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line);background:#f9fafb}
+    .card .body{padding:14px 16px}
+    .small{font-size:12px;color:var(--muted);line-height:1.45}
+    .hint{background:#eef2ff;border-left:4px solid var(--blue);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.5}
+    .quickguide{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin:10px 0}
+    .quickguide ol{margin:6px 0 0 20px;padding:0;font-size:13px;line-height:1.6}
+    .guide-title{font-weight:800;margin-bottom:4px;color:#0f172a}
+    .warn{background:var(--amber2);border-left:4px solid var(--amber);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.5}
+    .errorbox{background:var(--red2);border-left:4px solid var(--red);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.5}
+    .okbox{background:var(--green2);border-left:4px solid var(--green);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.5}
+    label{display:block;font-size:13px;font-weight:650;margin:8px 0 4px}
+    input[type="number"], input[type="text"], select, textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:14px;background:#fff;color:var(--ink)}
+    input[type="checkbox"]{transform:scale(1.15);margin-right:6px;vertical-align:middle}
+    button{border:0;border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer;background:var(--blue);color:white;box-shadow:0 2px 8px rgba(37,99,235,.18)}
+    button.secondary{background:#374151;color:white}
+    button.light{background:#e5e7eb;color:#111827;box-shadow:none}
+    button.green{background:var(--green)}
+    button.red{background:var(--red)}
+    button.amber{background:var(--amber)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    details{border:1px solid var(--line);border-radius:10px;margin:10px 0;background:white}
+    summary{cursor:pointer;font-weight:750;padding:10px 12px;background:#f9fafb;border-radius:10px}
+    details[open] summary{border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
+    .member-list{max-height:270px;overflow:auto;padding:8px 10px}
+    .member-row{display:grid;grid-template-columns:26px 70px 1fr 86px;gap:6px;align-items:center;border-bottom:1px dashed #e5e7eb;padding:5px 0;font-size:12px}
+    .member-row:last-child{border-bottom:0}
+    .pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:12px;font-weight:700;margin:2px;color:#111827;background:#e5e7eb}
+    .pill.blue{background:var(--blue2);color:#1e40af}.pill.green{background:var(--green2);color:#065f46}.pill.red{background:var(--red2);color:#991b1b}.pill.amber{background:var(--amber2);color:#92400e}.pill.purple{background:var(--purple2);color:#5b21b6}
+    #canvasWrap,#resultCanvasWrap{padding:10px;background:#fff}
+    svg{width:100%;height:520px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(#ffffff,#f8fafc)}
+    .svg-note{font-size:12px;fill:#64748b}.node-label{font-size:11px;fill:#334155;font-weight:650}.member-label{font-size:10px;fill:#64748b}.load-label{font-size:11px;fill:#b45309;font-weight:650}
+    table{width:100%;border-collapse:collapse;font-size:12px;background:white;margin:8px 0;border-radius:8px;overflow:hidden}
+    th,td{border:1px solid #e5e7eb;padding:6px 7px;text-align:right;vertical-align:top}
+    th{text-align:center;background:#f3f4f6;font-weight:800}
+    td.left{text-align:left}.nowrap{white-space:nowrap}
+    .result-title{font-size:15px;font-weight:800;margin:12px 0 6px}
+    .metric{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 0;border-bottom:1px dashed #e5e7eb;font-size:13px}.metric b{font-size:14px}.metric.ok b{color:var(--green)}.metric.bad b{color:var(--red)}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tab{background:#e5e7eb;color:#111827;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}.tab.active{background:var(--blue);color:white}
+    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}.progress>div{height:100%;background:var(--blue);width:0%}
+    .footer{padding:18px;text-align:center;color:var(--muted);font-size:12px}
+    .formula{font-family:"Cambria Math","Times New Roman",serif;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;margin:7px 0;font-size:15px;overflow-x:auto}
+    i{font-family:"Cambria Math","Times New Roman",serif;font-style:italic}
+    sub{font-size:.72em;vertical-align:sub;line-height:0}
+
+    .section-table input{font-size:12px;padding:5px 6px;border-radius:6px}
+    .section-table td,.section-table th{vertical-align:middle;text-align:center}
+    .steel-visual{display:flex;justify-content:center;align-items:center;min-width:118px}
+    .steel-svg{width:120px;height:58px;overflow:visible}
+    .section-note{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:9px 10px;margin:8px 0;font-size:12px;line-height:1.55;color:#334155}
+    .cost-explain{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+    .cost-item{background:#ffffff;border:1px solid #e5e7eb;border-left:4px solid #94a3b8;border-radius:10px;padding:9px 10px;font-size:12px;line-height:1.5}
+    .cost-item b{display:block;color:#0f172a;margin-bottom:3px}
+    .lock-note{background:#ecfeff;border-left:4px solid #0891b2;border-radius:10px;padding:9px 10px;margin:8px 0;font-size:12px;line-height:1.55;color:#164e63}
+    .viz-controls{display:grid;grid-template-columns:180px 1fr;gap:8px;align-items:center;margin:10px 0 8px;padding:10px;border:1px solid #e5e7eb;background:#f8fafc;border-radius:10px}
+    .legend{font-size:12px;color:#334155;line-height:1.55}
+    .swatch{display:inline-block;width:16px;height:4px;border-radius:999px;margin:0 4px 2px 8px;vertical-align:middle}
+    @media (max-width:1300px){.wrap{grid-template-columns:1fr}.card{max-width:100%}svg{height:480px}}
+  
+    .app{max-width:1720px;margin:0 auto;padding:16px}
+    .topnav{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px;position:sticky;top:0;z-index:20;background:rgba(246,248,251,.92);backdrop-filter:blur(8px);padding:10px 0}
+    .navbtn{background:white;color:#0f172a;border:1px solid var(--line);box-shadow:0 2px 10px rgba(15,23,42,.06);padding:12px 14px;border-radius:14px;text-align:left;display:flex;gap:10px;align-items:center}
+    .navbtn .num{background:#e0f2fe;color:#0369a1;border-radius:999px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:0 0 auto}
+    .navbtn .txt{display:flex;flex-direction:column;line-height:1.25}.navbtn small{font-weight:600;color:#64748b}.navbtn.active{background:#0f172a;color:white;border-color:#0f172a}.navbtn.active small{color:#cbd5e1}.navbtn.active .num{background:#38bdf8;color:#082f49}
+    .screen{display:none}.screen.active{display:block}
+    .design-layout{display:grid;grid-template-columns:390px minmax(620px,1fr);gap:16px;align-items:start}
+    .result-layout{display:grid;grid-template-columns:minmax(680px,1fr) 440px;gap:16px;align-items:start}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    .sticky-side{position:sticky;top:82px;max-height:calc(100vh - 98px);overflow:auto}
+    .section-grid{display:grid;grid-template-columns:repeat(5,minmax(185px,1fr));gap:12px;margin:12px 0}
+    .section-card{border:1px solid #dbe3ee;border-radius:16px;background:linear-gradient(180deg,#fff,#f8fafc);box-shadow:0 3px 12px rgba(15,23,42,.06);padding:12px;display:grid;gap:8px}
+    .section-card h3{margin:0;font-size:18px;color:#0f172a;display:flex;justify-content:space-between;align-items:center}.section-card h3 span{font-size:12px;color:#475569;font-weight:800;background:#e5e7eb;border-radius:999px;padding:3px 8px}
+    .section-card .steel-svg{width:100%;height:64px}.section-card label{font-size:11px;margin:4px 0 2px}.section-card input{font-size:12px;padding:6px 7px}.section-card .descbox{font-size:12px;line-height:1.4;color:#334155;background:#f1f5f9;border-radius:8px;padding:6px 7px}
+    .cost-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cost-grid .cost-item{min-height:105px}
+    .runbar{display:flex;gap:8px;flex-wrap:wrap;padding:12px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:14px;margin:10px 0}.runbar button{font-size:14px;padding:10px 13px}
+    .mode-help{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.help-tile{border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:10px;font-size:12px;line-height:1.45}.help-tile b{display:block;color:#0f172a;margin-bottom:4px}
+    .result-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}.hero-metric{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:12px;box-shadow:0 3px 12px rgba(15,23,42,.04)}.hero-metric span{display:block;color:#64748b;font-size:12px}.hero-metric b{display:block;margin-top:3px;font-size:20px;color:#0f172a}
+    .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    .material-banner{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#ecfeff,#eff6ff);border:1px solid #bae6fd;border-radius:16px;padding:14px;margin-bottom:14px}.material-banner .icon{font-size:28px}.material-banner b{font-size:17px;color:#0f172a}.material-banner p{margin:4px 0 0;color:#334155;font-size:13px;line-height:1.5}
+    @media (max-width:1500px){.section-grid{grid-template-columns:repeat(3,1fr)}.result-layout{grid-template-columns:1fr}.sticky-side{position:static;max-height:none}}
+    @media (max-width:1100px){.topnav{grid-template-columns:1fr 1fr}.design-layout,.two-col,.report-grid{grid-template-columns:1fr}.section-grid{grid-template-columns:1fr 1fr}.cost-grid,.mode-help,.result-hero{grid-template-columns:1fr}}
+    @media (max-width:700px){.topnav{grid-template-columns:1fr}.section-grid{grid-template-columns:1fr}.app{padding:10px}header{padding:18px}.navbtn{padding:10px}}
+
+  </style>
+</head>
+<body>
+<header>
+  <h1>재난관리를 위한 소형 지붕 강관 골조 최소비용 구조설계 해석 시스템</h1>
+  <p>이종혁</p>
+</header>
+
+<main class="app">
+  <nav class="topnav" aria-label="workflow tabs">
+    <button class="navbtn active" data-screen="design" onclick="showScreen('design')"><span class="num">1</span><span class="txt"><b>설계·부재 선택</b><small>형상, 하중, 부재를 설정</small></span></button>
+    <button class="navbtn" data-screen="materials" onclick="showScreen('materials')"><span class="num">2</span><span class="txt"><b>재료·비용</b><small>S1~S5와 비용식을 확인</small></span></button>
+    <button class="navbtn" data-screen="results" onclick="showScreen('results')"><span class="num">3</span><span class="txt"><b>해석 결과</b><small>LC1~LC5 판정과 취약 부재</small></span></button>
+    <button class="navbtn" data-screen="report" onclick="showScreen('report')"><span class="num">4</span><span class="txt"><b>비교·제출</b><small>설계안 저장, CSV/JSON, 체크리스트</small></span></button>
+  </nav>
+
+  <section id="screen-design" class="screen active">
+    <div class="design-layout">
+      <aside class="card sticky-side">
+        <h2>1. 설계 조건</h2>
+        <div class="body">
+          <div class="hint"><b>처음 사용:</b> 기본 예시안 상태에서 <b>해석 실행</b>을 먼저 눌러보세요. 그 다음 부재를 클릭해 추가/삭제하고 단면 S1~S5를 바꿔보면 됩니다.</div>
+          <div class="grid2">
+            <div><label>지붕 형상</label><select id="roofProfile"><option value="gable">박공지붕형</option><option value="arch">온실형 아치</option></select></div>
+            <div><label>최고 높이 <i>h</i> (m)</label><select id="roofHeight"><option value="1.2">1.20</option><option value="1.5" selected>1.50</option><option value="1.8">1.80</option></select></div>
+          </div>
+          <div class="grid2">
+            <div><label>경간 <i>L</i> (m)</label><input type="number" id="spanL" value="8.0" step="0.1" min="1" /></div>
+            <div><label>패널 수 <i>n</i></label><input type="number" id="panelN" value="8" step="1" min="4" max="12" /></div>
+          </div>
+          <div class="grid2">
+            <div><label>처마부 높이 <i>e</i> (m)</label><input type="number" id="eaveHeight" value="0.30" step="0.05" min="0.0" /></div>
+            <div><label>지점조건</label><select id="supportMode"><option value="pin_roller" selected>좌측 핀 + 우측 롤러</option><option value="pin_pin">좌우 모두 핀</option></select></div>
+          </div>
+          <div class="grid2">
+            <div><label><input type="checkbox" id="lowerLayerEnabled" /> 하부 보강층 추가</label><div class="small">하현재 아래 L0~Ln 보강 절점을 생성합니다.</div></div>
+            <div><label>하부 보강 깊이 <i>d</i> (m)</label><input type="number" id="lowerLayerDepth" value="0.80" step="0.05" min="0.10" /></div>
+          </div>
+          <details open><summary>하중 입력값</summary>
+            <div class="body">
+              <div class="small">텀프로젝트용 설계하중입니다. 실제 시공용 설계값이 아니라 팀별 비교를 위한 공통 가상값입니다.</div>
+              <div class="grid2">
+                <div><label><i>q</i><sub>D</sub> 고정하중 (kN/m²)</label><input type="number" id="qD" value="0.30" step="0.05" /></div>
+                <div><label><i>q</i><sub>S</sub> 적설하중 (kN/m²)</label><input type="number" id="qS" value="0.80" step="0.05" /></div>
+                <div><label><i>q</i><sub>W,h</sub> 수평 풍하중 (kN/m²)</label><input type="number" id="qWh" value="0.30" step="0.05" /></div>
+                <div><label><i>q</i><sub>W,u</sub> 상향 풍하중 (kN/m²)</label><input type="number" id="qWu" value="0.50" step="0.05" /></div>
+                <div><label>골조 간격 <i>s</i> (m)</label><input type="number" id="frameSpacing" value="2.00" step="0.1" /></div>
+                <div><label>허용처짐 기준 <i>L</i> /</label><input type="number" id="deflectionDiv" value="250" step="10" /></div>
+              </div>
+              <div class="formula">면하중 <i>q</i> → 선하중 <i>w</i> = <i>q</i>·<i>s</i> → 절점하중 <i>P</i> = <i>w</i>·Δ<i>x</i></div>
+              <div id="loadCalcExample" class="small"></div>
+            </div>
+          </details>
+          <details open><summary>처음 시작하기</summary>
+            <div class="body">
+              <div class="btnrow"><button class="light" onclick="loadPreset('stable')">기본 예시안 불러오기</button><button class="light" onclick="loadPreset('clear')">선택 초기화</button></div>
+              <div class="small">기본 예시는 사용법을 익히기 위한 출발점으로, 그대로 제출하기보다 부재와 단면을 바꾸어 비교해보세요.</div>
+            </div>
+          </details>
+          <div class="runbar">
+            <button class="green" onclick="runAnalysis()">해석 실행</button>
+            <button class="secondary" onclick="saveDesignSlot()">현재 설계안 저장</button>
+            <button class="light" onclick="showScreen('materials')">S1~S5 보기</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="card">
+        <h2>2. 구조 모델링 화면 <span class="pill blue">모델 보기 전용</span></h2>
+        <div id="canvasWrap">
+          <svg id="designSvg" viewBox="0 0 920 560" aria-label="truss model"></svg>
+          <div class="hint"><b>모델 보기:</b> 이 탭에서는 형상과 부재 선택만 확인합니다. 회색 점선 후보를 클릭하면 부재가 추가되고, 진한 선택 부재를 다시 클릭하면 해제됩니다. 필수 부재는 해제되지 않습니다. 축력·응력비·좌굴비·변형 형상은 <b>3. 해석 결과</b> 탭에서 확인하세요.</div>
+        </div>
+        <div class="body">
+          <details open><summary>후보 부재 선택 목록</summary><div id="memberLists"></div></details>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section id="screen-materials" class="screen">
+    <div class="card">
+      <h2>재료·비용 설정</h2>
+      <div class="body">
+        <div class="material-banner"><div class="icon">🔩</div><div><b>S1~S5는 본 프로젝트용 강관 단면 후보입니다.</b><p>심화 분석을 원하는 팀만 단면값과 단가를 바꿔보고, 변경 이유를 보고서에 설명하면 됩니다.</p></div></div>
+        <div class="section-note"><b>해석에서 <i>A</i>와 <i>I</i>의 역할</b><br>단면적 <i>A</i>가 클수록 축강성 <i>EA/L</i>이 커지고 축응력 <i>σ=N/A</i>이 작아집니다. 단면2차모멘트 <i>I</i>가 클수록 압축부재의 Euler 좌굴하중 <i>P</i><sub>cr</sub>이 커집니다. 단가가 높을수록 총비용이 증가합니다.</div>
+        
+          <div class="section-grid">
+            <div class="section-card"><h3>S1 <span>경량</span></h3><div class="steel-visual"><svg class="steel-svg" viewBox="0 0 170 70"><path d="M28 15 L130 15 Q158 35 130 55 L28 55 Q2 35 28 15Z" fill="#dff3ff" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="24" ry="24" fill="#dff3ff" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="11" ry="11" fill="#fff"/><line x1="50" y1="20" x2="143" y2="20" stroke="#93c5fd" stroke-width="5" opacity=".75"/></svg></div><div class="descbox">가장 작고 저렴한 강관. 비용은 낮지만 좌굴에 취약할 수 있습니다.</div><div class="grid2"><div><label><i>A</i> (m²)</label><input class="section-input" type="number" id="sec_A_S1" value="2.5e-4" step="any"></div><div><label><i>I</i> (m⁴)</label><input class="section-input" type="number" id="sec_I_S1" value="1.5e-8" step="any"></div></div><div class="grid2"><div><label>단가 (CP/m)</label><input class="section-input" type="number" id="sec_cost_S1" value="9" step="0.1"></div><div><label>설명</label><input class="section-input" type="text" id="sec_desc_S1" value="경량"></div></div></div>
+            <div class="section-card"><h3>S2 <span>보통</span></h3><div class="steel-visual"><svg class="steel-svg" viewBox="0 0 170 70"><path d="M28 15 L130 15 Q158 35 130 55 L28 55 Q2 35 28 15Z" fill="#dbeafe" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="24" ry="24" fill="#dbeafe" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="11" ry="11" fill="#fff"/><line x1="50" y1="20" x2="143" y2="20" stroke="#60a5fa" stroke-width="5" opacity=".75"/></svg></div><div class="descbox">기본 수준의 강관. 일반 부재에 배정하기 좋은 기준 단면입니다.</div><div class="grid2"><div><label><i>A</i> (m²)</label><input class="section-input" type="number" id="sec_A_S2" value="4.0e-4" step="any"></div><div><label><i>I</i> (m⁴)</label><input class="section-input" type="number" id="sec_I_S2" value="4.0e-8" step="any"></div></div><div class="grid2"><div><label>단가 (CP/m)</label><input class="section-input" type="number" id="sec_cost_S2" value="13" step="0.1"></div><div><label>설명</label><input class="section-input" type="text" id="sec_desc_S2" value="보통"></div></div></div>
+            <div class="section-card"><h3>S3 <span>중간강성</span></h3><div class="steel-visual"><svg class="steel-svg" viewBox="0 0 170 70"><path d="M28 15 L130 15 Q158 35 130 55 L28 55 Q2 35 28 15Z" fill="#ffe5ad" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="24" ry="24" fill="#ffe5ad" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="11" ry="11" fill="#fff"/><line x1="50" y1="20" x2="143" y2="20" stroke="#f59e0b" stroke-width="5" opacity=".75"/></svg></div><div class="descbox">비용과 강성의 절충안. 압축 또는 긴 부재에 고려할 수 있습니다.</div><div class="grid2"><div><label><i>A</i> (m²)</label><input class="section-input" type="number" id="sec_A_S3" value="6.0e-4" step="any"></div><div><label><i>I</i> (m⁴)</label><input class="section-input" type="number" id="sec_I_S3" value="9.0e-8" step="any"></div></div><div class="grid2"><div><label>단가 (CP/m)</label><input class="section-input" type="number" id="sec_cost_S3" value="18" step="0.1"></div><div><label>설명</label><input class="section-input" type="text" id="sec_desc_S3" value="중간강성"></div></div></div>
+            <div class="section-card"><h3>S4 <span>고강성</span></h3><div class="steel-visual"><svg class="steel-svg" viewBox="0 0 170 70"><path d="M28 15 L130 15 Q158 35 130 55 L28 55 Q2 35 28 15Z" fill="#ffd4dc" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="24" ry="24" fill="#ffd4dc" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="11" ry="11" fill="#fff"/><line x1="50" y1="20" x2="143" y2="20" stroke="#fb7185" stroke-width="5" opacity=".75"/></svg></div><div class="descbox">좌굴 위험이 큰 압축부재에 유리하지만 비용 증가가 큽니다.</div><div class="grid2"><div><label><i>A</i> (m²)</label><input class="section-input" type="number" id="sec_A_S4" value="9.0e-4" step="any"></div><div><label><i>I</i> (m⁴)</label><input class="section-input" type="number" id="sec_I_S4" value="2.0e-7" step="any"></div></div><div class="grid2"><div><label>단가 (CP/m)</label><input class="section-input" type="number" id="sec_cost_S4" value="26" step="0.1"></div><div><label>설명</label><input class="section-input" type="text" id="sec_desc_S4" value="고강성"></div></div></div>
+            <div class="section-card"><h3>S5 <span>매우 고강성</span></h3><div class="steel-visual"><svg class="steel-svg" viewBox="0 0 170 70"><path d="M28 15 L130 15 Q158 35 130 55 L28 55 Q2 35 28 15Z" fill="#f7c4d0" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="24" ry="24" fill="#f7c4d0" stroke="#0f172a" stroke-width="2"/><ellipse cx="28" cy="35" rx="11" ry="11" fill="#fff"/><line x1="50" y1="20" x2="143" y2="20" stroke="#e11d48" stroke-width="5" opacity=".75"/></svg></div><div class="descbox">가장 강하고 비싼 단면. 정말 취약한 부재에만 쓰는 것이 경제적입니다.</div><div class="grid2"><div><label><i>A</i> (m²)</label><input class="section-input" type="number" id="sec_A_S5" value="1.2e-3" step="any"></div><div><label><i>I</i> (m⁴)</label><input class="section-input" type="number" id="sec_I_S5" value="3.6e-7" step="any"></div></div><div class="grid2"><div><label>단가 (CP/m)</label><input class="section-input" type="number" id="sec_cost_S5" value="34" step="0.1"></div><div><label>설명</label><input class="section-input" type="text" id="sec_desc_S5" value="매우 고강성"></div></div></div>
+          </div>
+
+        <div class="two-col">
+          <div class="card"><h2>공통 재료·판정값</h2><div class="body"><div class="grid2"><div><label>탄성계수 <i>E</i> (GPa)</label><input type="number" id="E_GPa" value="200" step="10" /></div><div><label>허용응력 <i>σ</i><sub>allow</sub> (MPa)</label><input type="number" id="sigmaAllow" value="150" step="10" /></div><div><label>좌굴 유효길이계수 <i>K</i></label><input type="number" id="Kfactor" value="1.0" step="0.1" /></div></div><div class="formula"><i>P</i><sub>cr</sub> = π²<i>EI</i> / (<i>KL</i>)²</div></div></div>
+          <div class="card"><h2>비용 계수</h2><div class="body"><div class="grid2"><div><label>부재 제작비 <i>C</i><sub>m</sub> (CP/개)</label><input type="number" id="memberFabCost" value="3" step="1" /></div><div><label>접합부 비용 <i>C</i><sub>j</sub> (CP/절점)</label><input type="number" id="jointCost" value="5" step="1" /></div><div><label>수평반력 비용 <i>C</i><sub>R</sub> (CP/kN)</label><input type="number" id="reactionCost" value="0.2" step="0.1" /></div></div><div class="formula"><i>C</i><sub>total</sub> = Σ <i>c</i><sub>s(i)</sub><i>L</i><sub>i</sub> + <i>C</i><sub>m</sub><i>n</i><sub>m</sub> + <i>C</i><sub>j</sub><i>n</i><sub>j</sub> + <i>C</i><sub>R</sub>(|<i>R</i><sub>x,L</sub>|+|<i>R</i><sub>x,R</sub>|)</div></div></div>
+        </div>
+        <div class="cost-grid">
+          <div class="cost-item"><b>부재 제작비 <i>C</i><sub>m</sub></b>부재 1개를 절단·가공·설치하는 고정비입니다. 부재를 많이 넣으면 재료비뿐 아니라 제작·시공비도 증가한다는 의미입니다.</div>
+          <div class="cost-item"><b>접합부 비용 <i>C</i><sub>j</sub></b>절점 하나에 필요한 볼트, 용접, 접합판, 시공비를 단순화한 비용입니다. 복잡한 구조일수록 접합부 비용이 커집니다.</div>
+          <div class="cost-item"><b>수평반력 비용 <i>C</i><sub>R</sub></b>아치형 구조 등에서 지점에 큰 수평반력이 발생하면 앵커·기초 보강이 필요하다는 점을 반영한 가상 비용입니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-results" class="screen">
+    <div class="result-layout">
+      <section class="card">
+        <h2>해석 결과 시각화</h2>
+        <div id="resultCanvasWrap">
+          <svg id="resultSvg" viewBox="0 0 920 560" aria-label="truss analysis result"></svg>
+          <div class="viz-controls">
+            <div><label style="margin:0 0 4px">시각화 모드</label><select id="vizMode"><option value="model" selected>모델 보기</option><option value="axial">축력 <i>N</i> 부호·크기</option><option value="stress">응력비 |<i>σ</i>|/<i>σ</i><sub>allow</sub></option><option value="buckling">좌굴비 |<i>N</i><sub>c</sub>|/<i>P</i><sub>cr</sub></option><option value="deformed">변형 형상 보기</option></select></div>
+            <div id="vizLegend" class="legend">해석 실행 후 LC1~LC5 중 선택한 하중 케이스의 결과를 색상으로 확인할 수 있습니다.</div>
+          </div>
+          <div class="tabs" id="loadTabs"></div>
+          <div id="loadExplanation" class="small"></div>
+        </div>
+      </section>
+      <aside class="card sticky-side">
+        <h2>종합 판정</h2>
+        <div class="body">
+          <div class="mode-help"><div class="help-tile"><b>축력 <i>N</i></b>인장/압축 부재와 하중이 큰 부재를 색과 굵기로 확인합니다.</div><div class="help-tile"><b>응력비</b>허용응력에 가까운 부재를 찾습니다. 1을 넘으면 부적합입니다.</div><div class="help-tile"><b>좌굴비</b>압축부재 중 좌굴 위험이 큰 부재를 확인합니다.</div></div>
+          <div id="statusBox" class="warn">아직 해석을 실행하지 않았습니다.</div>
+          <div id="summaryMetrics"></div>
+          <div class="btnrow"><button class="green" onclick="runAnalysis()">다시 해석 실행</button><button class="secondary" onclick="saveDesignSlot()">현재 설계안 저장</button><button class="light" onclick="showScreen('design')">부재 수정하기</button></div>
+        </div>
+      </aside>
+    </div>
+    <section class="card" style="margin-top:16px">
+      <h2>LC1~LC5 상세 결과</h2>
+      <div class="body"><div id="caseResults"></div></div>
+    </section>
+  </section>
+
+  <section id="screen-report" class="screen">
+    <div class="report-grid">
+      <section class="card"><h2>설계안 비교 저장표</h2><div class="body"><div class="small">각 팀은 최소 4개의 설계안을 비교하세요. 저장표는 브라우저의 localStorage에 저장됩니다.</div><div id="savedDesigns"></div><div class="btnrow"><button class="red" onclick="clearSavedDesigns()">저장표 초기화</button></div></div></section>
+      <section class="card"><h2>저장 파일과 제출 자료</h2><div class="body"><div class="btnrow"><button class="light" onclick="downloadJSON()">현재 입력 저장(JSON)</button><button class="light" onclick="downloadResultsCSV()">해석 결과표 저장(CSV)</button></div><div class="hint"><b>JSON</b>은 현재 화면에서 선택한 형상·부재·단면·하중 설정을 저장한 입력 파일입니다.<br><b>CSV</b>는 부재력, 응력비, 좌굴비, 비용 요약을 Excel에서 열 수 있는 결과표입니다.</div><div class="small">처음 사용하는 경우에는 <b>해석 실행 → 결과 확인 → 현재 설계안 저장</b> 흐름을 먼저 익혀보세요.</div></div></section>
+      <section class="card"><h2>보고서 체크리스트</h2><div class="body small"><ol><li>지붕 형상과 높이를 왜 선택했는가?</li><li>면하중 → 선하중 → 절점하중 변환을 검산했는가?</li><li>구조가 불안정 구조인지 확인했는가?</li><li>가장 큰 인장/압축 부재를 찾았는가?</li><li>LC1~LC5 중 지배 하중 케이스를 찾고, 최대 압축부재 좌굴비를 손계산으로 검증했는가?</li><li>최저비용 설계가 왜 안전한지 설명할 수 있는가?</li><li>AI/LLM이 낸 답변 중 오류 가능성을 어떻게 검증했는가?</li></ol></div></section>
+      <section class="card"><h2>권장 작업 흐름</h2><div class="body small"><ol><li>기본 예시안으로 해석 실행</li><li>저비용형, 기본 안정형, 좌굴 보강형, 풍하중 대응형 설계안 작성</li><li>각 설계안 저장</li><li>저장표에서 비용·응력비·좌굴비·처짐 비교</li><li>최종 설계안 선정 및 실패 설계안 분석</li></ol></div></section>
+    </div>
+  </section>
+</main>
+
+<div class="footer">교육용 2D 트러스 해석기 · 실제 시공/인허가 설계에는 사용할 수 없습니다.</div>
+
+<script>
+'use strict';
+
+const GROUP_LABEL = {
+  required:'필수', bottom:'하현재', vertical:'수직재', diagA:'대각재 ↗', diagB:'대각재 ↘',
+  lowerChord:'하부 보강현', lowerVertical:'하부 수직재', lowerDiagA:'하부 대각재 ↗', lowerDiagB:'하부 대각재 ↘'
+};
+const SECTION_DATA = {
+  S1:{A:2.5e-4, I:1.5e-8, cost:9, name:'S1 경량'},
+  S2:{A:4.0e-4, I:4.0e-8, cost:13, name:'S2 보통'},
+  S3:{A:6.0e-4, I:9.0e-8, cost:18, name:'S3 중간강성'},
+  S4:{A:9.0e-4, I:2.0e-7, cost:26, name:'S4 고강성'},
+  S5:{A:1.2e-3, I:3.6e-7, cost:34, name:'S5 매우 고강성'}
+};
+function getSectionData(){
+  const data=clone(SECTION_DATA);
+  for(const sid of Object.keys(data)){
+    const A=document.getElementById(`sec_${sid}_A`);
+    const I=document.getElementById(`sec_${sid}_I`);
+    const cost=document.getElementById(`sec_${sid}_cost`);
+    const name=document.getElementById(`sec_${sid}_name`);
+    if(A) data[sid].A=Number(A.value);
+    if(I) data[sid].I=Number(I.value);
+    if(cost) data[sid].cost=Number(cost.value);
+    if(name) data[sid].name=`${sid} ${name.value}`;
+  }
+  return data;
+}
+function sectionLabel(sid){
+  const sec=getSectionData()[sid] || SECTION_DATA[sid];
+  return `${sid} (${fmtSig(sec.A,2)} m², ${fmt(sec.cost,0)} CP/m)`;
+}
+
+function getSectionData(){
+  const data={};
+  for(const sid of Object.keys(SECTION_DATA)){
+    const Ael=document.getElementById(`sec_A_${sid}`);
+    const Iel=document.getElementById(`sec_I_${sid}`);
+    const Cel=document.getElementById(`sec_cost_${sid}`);
+    const Del=document.getElementById(`sec_desc_${sid}`);
+    const A=Ael ? Number(Ael.value) : SECTION_DATA[sid].A;
+    const I=Iel ? Number(Iel.value) : SECTION_DATA[sid].I;
+    const cost=Cel ? Number(Cel.value) : SECTION_DATA[sid].cost;
+    const desc=Del ? Del.value : SECTION_DATA[sid].name.replace(`${sid} `,'');
+    data[sid]={
+      A: Number.isFinite(A) && A>0 ? A : SECTION_DATA[sid].A,
+      I: Number.isFinite(I) && I>0 ? I : SECTION_DATA[sid].I,
+      cost: Number.isFinite(cost) && cost>=0 ? cost : SECTION_DATA[sid].cost,
+      name: `${sid} ${desc}`
+    };
+  }
+  return data;
+}
+let state = {nodes:[], candidates:[], selected:{}, sectionByMember:{}, requiredIds:new Set(), lastResult:null, activeCase:'LC1'};
+
+function val(id){ return document.getElementById(id).value; }
+function num(id){ return Number(document.getElementById(id).value); }
+function fmt(x, d=3){ if(!Number.isFinite(x)) return '-'; return Number(x).toLocaleString('ko-KR',{maximumFractionDigits:d, minimumFractionDigits: d}); }
+function fmtSig(x, d=3){ if(!Number.isFinite(x)) return '-'; return Number(x).toLocaleString('ko-KR',{maximumSignificantDigits:d}); }
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function normMember(a,b){ return [a,b].sort().join('|'); }
+
+function getSettings(){
+  return {
+    L:num('spanL'), n:Math.round(num('panelN')), h:Number(val('roofHeight')), e:num('eaveHeight'), profile:val('roofProfile'),
+    lowerLayer:document.getElementById('lowerLayerEnabled').checked, lowerDepth:num('lowerLayerDepth'),
+    supportMode:val('supportMode'), qD:num('qD'), qS:num('qS'), qWh:num('qWh'), qWu:num('qWu'), s:num('frameSpacing'),
+    E: num('E_GPa')*1e6, // GPa -> kN/m2
+    sigmaAllowMPa:num('sigmaAllow'), deflectionLimitDiv:num('deflectionDiv'), Kfactor:num('Kfactor'),
+    memberFabCost:num('memberFabCost'), jointCost:num('jointCost'), reactionCost:num('reactionCost')
+  };
+}
+
+function generateNodes(){
+  const set=getSettings(); const L=set.L, n=set.n, dx=L/n, h=set.h, e=set.e;
+  const nodes=[];
+  for(let i=0;i<=n;i++) nodes.push({id:`B${i}`, x:i*dx, y:0, type:'bottom'});
+  if(set.lowerLayer){
+    const depth=Math.max(0.1, set.lowerDepth || 0.8);
+    for(let i=0;i<=n;i++) nodes.push({id:`L${i}`, x:i*dx, y:-depth, type:'lower'});
+  }
+  for(let i=0;i<=n;i++){
+    const x=i*dx; let shape;
+    if(set.profile==='gable') shape=1-Math.abs(x-L/2)/(L/2);
+    else shape=1-Math.pow((x-L/2)/(L/2),2);
+    nodes.push({id:`T${i}`, x:x, y:e+(h-e)*shape, type:'top'});
+  }
+  return nodes;
+}
+
+function generateCandidateMembers(){
+  const set=getSettings(); const n=set.n;
+  const list=[]; let idn=1;
+  function add(group,a,b,required=false,section='S2'){
+    const id=`M${String(idn).padStart(2,'0')}`; idn++;
+    list.push({id, group, node_i:a, node_j:b, required, sectionDefault:section});
+  }
+  // Required roof chord and end posts
+  for(let i=0;i<n;i++) add('required',`T${i}`,`T${i+1}`,true,'S3');
+  add('required','B0','T0',true,'S3'); add('required',`B${n}`,`T${n}`,true,'S3');
+  // Optional bottom chord
+  for(let i=0;i<n;i++) add('bottom',`B${i}`,`B${i+1}`,false,'S2');
+  // Optional verticals
+  for(let i=1;i<n;i++) add('vertical',`B${i}`,`T${i}`,false,'S2');
+  // Optional diagonals
+  for(let i=0;i<n;i++){
+    add('diagA',`B${i}`,`T${i+1}`,false,'S2');
+    add('diagB',`B${i+1}`,`T${i}`,false,'S2');
+  }
+  if(set.lowerLayer){
+    for(let i=0;i<n;i++) add('lowerChord',`L${i}`,`L${i+1}`,false,'S2');
+    for(let i=0;i<=n;i++) add('lowerVertical',`L${i}`,`B${i}`,false,'S2');
+    for(let i=0;i<n;i++){
+      add('lowerDiagA',`L${i}`,`B${i+1}`,false,'S2');
+      add('lowerDiagB',`L${i+1}`,`B${i}`,false,'S2');
+    }
+  }
+  return list;
+}
+
+function resetGeneratedModel(preserveSelections=true){
+  const oldSelected=clone(state.selected); const oldSections=clone(state.sectionByMember);
+  state.nodes=generateNodes();
+  state.candidates=generateCandidateMembers();
+  state.requiredIds=new Set(state.candidates.filter(m=>m.required).map(m=>m.id));
+  const newSelected={}, newSections={};
+  for(const m of state.candidates){
+    newSelected[m.id]=m.required ? true : (preserveSelections && oldSelected[m.id]===true);
+    newSections[m.id]=oldSections[m.id] || m.sectionDefault || 'S2';
+  }
+  state.selected=newSelected; state.sectionByMember=newSections;
+}
+
+function loadPreset(kind){
+  state.lastResult=null;
+  resetGeneratedModel(false);
+  const set=getSettings(); const n=set.n;
+  const selectPairs=[]; const sections={};
+  function pair(a,b,sec){ selectPairs.push(normMember(a,b)); if(sec) sections[normMember(a,b)]=sec; }
+  if(kind==='clear') { renderAll(); return; }
+  if(kind==='lowcost'){
+    // bottom chord all, diagonal zigzag only, light sections
+    for(let i=0;i<n;i++) pair(`B${i}`,`B${i+1}`,'S1');
+    for(let i=0;i<n;i++){
+      if(i%2===0) pair(`B${i}`,`T${i+1}`,'S1');
+      else pair(`B${i+1}`,`T${i}`,'S1');
+    }
+    document.getElementById('roofProfile').value='arch'; document.getElementById('roofHeight').value='1.5';
+  }else if(kind==='stable'){
+    for(let i=0;i<n;i++) pair(`B${i}`,`B${i+1}`,'S2');
+    for(let i=1;i<n;i++) pair(`B${i}`,`T${i}`,'S2');
+    for(let i=0;i<n;i++){
+      if(i< n/2) pair(`B${i}`,`T${i+1}`,'S2');
+      else pair(`B${i+1}`,`T${i}`,'S2');
+    }
+    document.getElementById('roofProfile').value='gable'; document.getElementById('roofHeight').value='1.5';
+  }else if(kind==='buckling'){
+    for(let i=0;i<n;i++) pair(`B${i}`,`B${i+1}`,'S2');
+    for(let i=1;i<n;i++) pair(`B${i}`,`T${i}`,'S3');
+    for(let i=0;i<n;i++){ pair(`B${i}`,`T${i+1}`,'S3'); pair(`B${i+1}`,`T${i}`,'S2'); }
+    document.getElementById('roofProfile').value='gable'; document.getElementById('roofHeight').value='1.8';
+  }else if(kind==='wind'){
+    for(let i=0;i<n;i++) pair(`B${i}`,`B${i+1}`,'S3');
+    for(let i=1;i<n;i++) pair(`B${i}`,`T${i}`,'S2');
+    for(let i=0;i<n;i++){
+      pair(`B${i}`,`T${i+1}`,'S2');
+      if(i%2===0) pair(`B${i+1}`,`T${i}`,'S2');
+    }
+    document.getElementById('roofProfile').value='arch'; document.getElementById('roofHeight').value='1.5';
+  }
+  resetGeneratedModel(false);
+  for(const m of state.candidates){
+    const key=normMember(m.node_i,m.node_j);
+    if(m.required) { state.selected[m.id]=true; continue; }
+    if(selectPairs.includes(key)){ state.selected[m.id]=true; state.sectionByMember[m.id]=sections[key]||state.sectionByMember[m.id]; }
+  }
+  renderAll();
+}
+
+function nodeMap(){ const mp={}; for(const n of state.nodes) mp[n.id]=n; return mp; }
+function activeMembers(){ return state.candidates.filter(m=>state.selected[m.id]); }
+function activeNodeIds(){ const s=new Set(); for(const m of activeMembers()){s.add(m.node_i);s.add(m.node_j);} return s; }
+
+function memberColor(m){
+  if(m.required) return '#2563eb';
+  if(m.group==='bottom') return '#64748b';
+  if(m.group==='vertical') return '#059669';
+  if(m.group==='diagA') return '#7c3aed';
+  if(m.group==='diagB') return '#dc2626';
+  if(m.group==='lowerChord') return '#0f766e';
+  if(m.group==='lowerVertical') return '#0891b2';
+  if(m.group==='lowerDiagA') return '#be123c';
+  if(m.group==='lowerDiagB') return '#c2410c';
+  return '#111827';
+}
+
+function getPlotExtents(extraPoints=[]){
+  const pts=state.nodes.concat(extraPoints);
+  const xs=pts.map(a=>a.x), ys=pts.map(a=>a.y);
+  return {minX:Math.min(...xs), maxX:Math.max(...xs), minY:Math.min(...ys), maxY:Math.max(...ys)};
+}
+function mapPoint(n, extents=null){
+  const ex=extents || getPlotExtents();
+  const marginX=58, marginY=58, W=920, H=560;
+  const xRange=Math.max(ex.maxX-ex.minX,1);
+  const yRange=Math.max(ex.maxY-ex.minY,1);
+  const scaleX=(W-2*marginX)/xRange;
+  const scaleYAll=(H-2*marginY)/(yRange*1.25);
+  const finalScale=Math.min(scaleX,scaleYAll);
+  return {x:marginX+(n.x-ex.minX)*finalScale, y:H-marginY-(n.y-ex.minY)*finalScale, scale:finalScale};
+}
+
+function getActiveCaseResult(){
+  if(!state.lastResult || !state.lastResult.cases) return null;
+  const cr = state.lastResult.cases[state.activeCase] || null;
+  if(cr && cr.error) return null;
+  return cr;
+}
+function memberResultMap(caseResult){
+  const mp={};
+  if(!caseResult) return mp;
+  for(const r of caseResult.memberResults) mp[r.id]=r;
+  return mp;
+}
+function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+function ratioColor(r){
+  if(!Number.isFinite(r)) return '#94a3b8';
+  if(r < 0.50) return '#16a34a';
+  if(r < 0.85) return '#f59e0b';
+  if(r <= 1.00) return '#ef4444';
+  return '#7f1d1d';
+}
+function getVizMode(){ const el=document.getElementById('vizMode'); return el ? el.value : 'model'; }
+function visualStyleForMember(m, rmap, caseResult){
+  const base={stroke:memberColor(m), width:m.required?4:3.2, opacity:.95, dash:null};
+  const mode=getVizMode(); const mr=rmap[m.id];
+  if(!mr || mode==='model') return base;
+  if(mode==='axial'){
+    const rel = caseResult && caseResult.maxAbsN>1e-9 ? Math.abs(mr.N)/caseResult.maxAbsN : 0;
+    return {stroke: mr.N>=0 ? '#2563eb' : '#dc2626', width:2.2+6*rel, opacity:.95, dash:null};
+  }
+  if(mode==='stress'){
+    const rel=clamp01(mr.stressRatio/1.2);
+    return {stroke: ratioColor(mr.stressRatio), width:2.4+5*rel, opacity:.96, dash:null};
+  }
+  if(mode==='buckling'){
+    if(mr.N>=0) return {stroke:'#93c5fd', width:2.5, opacity:.55, dash:'4 4'};
+    const rel=clamp01(mr.bucklingRatio/1.2);
+    return {stroke: ratioColor(mr.bucklingRatio), width:2.6+5.5*rel, opacity:.96, dash:null};
+  }
+  return base;
+}
+function updateVizLegend(){
+  const el=document.getElementById('vizLegend'); if(!el) return;
+  const mode=getVizMode(); const cr=getActiveCaseResult();
+  if(mode==='model') el.innerHTML='모델 보기: 파란색은 필수 부재, 회색 점선은 후보 부재, 진한 선은 선택된 부재입니다.';
+  else if(!cr) el.innerHTML='해석 실행 후 선택한 하중 케이스의 결과를 색상으로 표시합니다.';
+  else if(mode==='axial') el.innerHTML='<span class="swatch" style="background:#2563eb"></span>인장 부재  <span class="swatch" style="background:#dc2626"></span>압축 부재 · 선이 굵을수록 |<i>N</i>|이 큽니다.';
+  else if(mode==='stress') el.innerHTML='<span class="swatch" style="background:#16a34a"></span>여유  <span class="swatch" style="background:#f59e0b"></span>주의  <span class="swatch" style="background:#ef4444"></span>한계 근접  <span class="swatch" style="background:#7f1d1d"></span>초과 · |<i>σ</i>|/<i>σ</i><sub>allow</sub> 기준';
+  else if(mode==='buckling') el.innerHTML='<span class="swatch" style="background:#93c5fd"></span>인장부재, 좌굴 검토 제외  <span class="swatch" style="background:#16a34a"></span>안전  <span class="swatch" style="background:#f59e0b"></span>주의  <span class="swatch" style="background:#7f1d1d"></span>좌굴 초과 · |<i>N</i><sub>c</sub>|/<i>P</i><sub>cr</sub> 기준';
+  else if(mode==='deformed') el.innerHTML='변형 형상: 회색은 원래 형상, 보라색은 절점변위를 확대 표시한 형상입니다. 실제 변위 크기는 결과표의 처짐값을 확인하세요.';
+}
+
+function renderSvg(target='design'){
+  const svg=document.getElementById(target==='results'?'resultSvg':'designSvg'); if(!svg) return; svg.innerHTML='';
+  const isResults = target==='results';
+  const mp=nodeMap();
+  const caseResult=isResults ? getActiveCaseResult() : null;
+  const hasCaseData = !!(caseResult && !caseResult.error && Array.isArray(caseResult.memberResults));
+  const rmap=hasCaseData ? memberResultMap(caseResult) : {};
+  const vizMode=isResults ? getVizMode() : 'model';
+  let deformAmp=null, deformedById=null;
+  let plotExtents=getPlotExtents();
+  if(vizMode==='deformed' && caseResult){
+    const maxDisp=Math.max(caseResult.maxDisp||0, 1e-12);
+    deformAmp=Math.min(250, Math.max(15, 0.10*getSettings().L/maxDisp));
+    deformedById={};
+    caseResult.nodeResults.forEach(d=>{
+      const nd=mp[d.id];
+      if(nd) deformedById[d.id]={x:nd.x+d.ux*deformAmp, y:nd.y+d.uy*deformAmp};
+    });
+    plotExtents=getPlotExtents(Object.values(deformedById));
+  }
+  const pt=(n)=>mapPoint(n, plotExtents);
+  function lineEl(x1,y1,x2,y2,attrs={}){
+    const e=document.createElementNS('http://www.w3.org/2000/svg','line');
+    e.setAttribute('x1',x1);e.setAttribute('y1',y1);e.setAttribute('x2',x2);e.setAttribute('y2',y2);
+    for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); svg.appendChild(e); return e;
+  }
+  function textEl(x,y,txt,cls=''){
+    const e=document.createElementNS('http://www.w3.org/2000/svg','text');
+    e.setAttribute('x',x); e.setAttribute('y',y); e.textContent=txt;
+    e.setAttribute('pointer-events','none');
+    if(cls) e.setAttribute('class',cls); svg.appendChild(e); return e;
+  }
+  function circleEl(x,y,r,attrs={}){
+    const e=document.createElementNS('http://www.w3.org/2000/svg','circle'); e.setAttribute('cx',x);e.setAttribute('cy',y);e.setAttribute('r',r); for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v); svg.appendChild(e); return e;
+  }
+  // grid baseline
+  const y0=pt(mp.B0).y; lineEl(40,y0,880,y0,{stroke:'#e5e7eb','stroke-width':2});
+  textEl(48,34, isResults ? `결과 시각화: ${generateLoadCases()[state.activeCase].name} / ${document.getElementById('vizMode')?.selectedOptions?.[0]?.textContent || '모델 보기'}` : `형상: ${val('roofProfile')==='gable'?'박공지붕형':'온실형 아치'} / h=${val('roofHeight')} m / 후보 클릭=추가 · 선택 부재 다시 클릭=해제`, 'svg-note');
+
+  // Draw unselected optional candidates first only in design tab.
+  // 실제 클릭 판정은 아래쪽의 투명 hitbox에서 처리한다.
+  if(!isResults) for(const m of state.candidates){
+    const a=pt(mp[m.node_i]); const b=pt(mp[m.node_j]);
+    if(!state.selected[m.id] && !m.required){
+      const l=lineEl(a.x,a.y,b.x,b.y,{stroke:'#cbd5e1','stroke-width':2,'stroke-dasharray':'5 5',opacity:.62,'pointer-events':'none'});
+      l.appendChild(document.createElementNS('http://www.w3.org/2000/svg','title')).textContent=`${m.id}: ${m.node_i}-${m.node_j} 선택 가능`;
+    }
+  }
+  // Selected/required
+  if(vizMode==='deformed' && caseResult){
+    // Original selected structure
+    for(const m of state.candidates){
+      if(!state.selected[m.id]) continue;
+      const a=pt(mp[m.node_i]); const b=pt(mp[m.node_j]);
+      lineEl(a.x,a.y,b.x,b.y,{stroke:'#cbd5e1','stroke-width':2.0,opacity:.80,'stroke-dasharray':'4 4'});
+    }
+    function deformedPoint(id){
+      return pt(deformedById[id] || mp[id]);
+    }
+    for(const m of state.candidates){
+      if(!state.selected[m.id]) continue;
+      const a=deformedPoint(m.node_i); const b=deformedPoint(m.node_j); const mr=rmap[m.id];
+      const col=mr ? (mr.N>=0?'#2563eb':'#dc2626') : '#7c3aed';
+      const l=lineEl(a.x,a.y,b.x,b.y,{stroke:col,'stroke-width':3.5,opacity:.92,cursor:'default','pointer-events':isResults?'auto':'none'});
+    }
+    textEl(620,34,`변형 확대 배율 ≈ ${fmt(deformAmp,0)}배`, 'svg-note');
+  }else{
+    for(const m of state.candidates){
+      if(!state.selected[m.id]) continue;
+      const a=pt(mp[m.node_i]); const b=pt(mp[m.node_j]); const st=visualStyleForMember(m,rmap,caseResult);
+      const attrs={stroke:st.stroke,'stroke-width':st.width,opacity:st.opacity,cursor:'default'}; if(st.dash) attrs['stroke-dasharray']=st.dash;
+      if(!isResults) attrs['pointer-events']='none';
+      const l=lineEl(a.x,a.y,b.x,b.y,attrs);
+      const mr=rmap[m.id];
+      const info=mr?` / N=${fmt(mr.N,2)} kN / 응력비=${fmt(mr.stressRatio,2)} / 좌굴비=${fmt(mr.bucklingRatio,2)}`:'';
+      l.appendChild(document.createElementNS('http://www.w3.org/2000/svg','title')).textContent=`${m.id}: ${m.node_i}-${m.node_j} / ${state.sectionByMember[m.id]}${info}`;
+    }
+  }
+  if(!isResults){
+    // 클릭 반경 확대용 투명 hitbox: 선택/해제를 쉽게 하기 위한 전용 클릭 레이어.
+    // 필수 부재는 해제하지 않고, 선택 후보 부재는 다시 클릭하면 해제한다.
+    for(const m of state.candidates){
+      if(m.required) continue;
+      const a=pt(mp[m.node_i]); const b=pt(mp[m.node_j]);
+      const selected = !!state.selected[m.id];
+      const hit=lineEl(a.x,a.y,b.x,b.y,{stroke:'#000','stroke-width':30,opacity:.001,cursor:'pointer','pointer-events':'stroke'});
+      hit.addEventListener('click',(ev)=>{
+        ev.stopPropagation();
+        state.selected[m.id] = !selected;
+        if(state.selected[m.id]) state.sectionByMember[m.id]=state.sectionByMember[m.id]||m.sectionDefault||'S2';
+        state.lastResult=null;
+        renderAll();
+      });
+      hit.appendChild(document.createElementNS('http://www.w3.org/2000/svg','title')).textContent=`${m.id}: ${m.node_i}-${m.node_j} ${selected?'해제':'선택'}`;
+    }
+  }
+  if(isResults) updateVizLegend();
+  // Supports
+  const pB0=pt(mp.B0), pBn=pt(mp[`B${getSettings().n}`]);
+  const plottedNodes=state.nodes.concat(deformedById ? Object.values(deformedById) : []);
+  const supportSymbolY=getSettings().lowerLayer ? Math.min(510, Math.max(...plottedNodes.map(nd=>pt(nd).y))+8) : null;
+  function drawVisibleSupport(p,type){
+    const y=supportSymbolY ?? p.y;
+    if(y>p.y+3) lineEl(p.x,p.y,p.x,y,{stroke:'#111827','stroke-width':1.5,'stroke-dasharray':'3 3'});
+    drawSupport(svg,p.x,y,type);
+  }
+  drawVisibleSupport(pB0,'pin');
+  drawVisibleSupport(pBn,val('supportMode')==='pin_pin'?'pin':'roller');
+  // Nodes
+  for(const nd of state.nodes){
+    const p=pt(nd); circleEl(p.x,p.y,5,{fill:'#111827',stroke:'white','stroke-width':2,'pointer-events':isResults?'auto':'none'});
+    textEl(p.x+7,p.y-7,nd.id,'node-label');
+  }
+  if(isResults) drawLoads(svg, pt);
+  if(isResults && caseResult) drawReactions(svg, caseResult, pt);
+}
+function drawSupport(svg,x,y,type){
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); svg.appendChild(g);
+  const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  tri.setAttribute('points',`${x},${y+7} ${x-16},${y+32} ${x+16},${y+32}`); tri.setAttribute('fill','#f8fafc');tri.setAttribute('stroke','#111827');tri.setAttribute('stroke-width','2'); g.appendChild(tri);
+  if(type==='roller'){
+    for(const dx of [-8,8]){ const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',x+dx);c.setAttribute('cy',y+39);c.setAttribute('r',4);c.setAttribute('fill','#fff');c.setAttribute('stroke','#111827');g.appendChild(c); }
+  }
+  const base=document.createElementNS('http://www.w3.org/2000/svg','line'); base.setAttribute('x1',x-24);base.setAttribute('y1',y+45);base.setAttribute('x2',x+24);base.setAttribute('y2',y+45);base.setAttribute('stroke','#111827');base.setAttribute('stroke-width',2);g.appendChild(base);
+}
+function drawArrow(svg,x1,y1,x2,y2,color,label){
+  const id='arrow'+Math.random().toString(36).slice(2);
+  const defs=svg.querySelector('defs') || document.createElementNS('http://www.w3.org/2000/svg','defs'); if(!defs.parentNode) svg.appendChild(defs);
+  const marker=document.createElementNS('http://www.w3.org/2000/svg','marker'); marker.setAttribute('id',id);marker.setAttribute('markerWidth','9');marker.setAttribute('markerHeight','9');marker.setAttribute('refX','8');marker.setAttribute('refY','3');marker.setAttribute('orient','auto');marker.setAttribute('markerUnits','strokeWidth');
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d','M0,0 L0,6 L8,3 z'); path.setAttribute('fill',color); marker.appendChild(path); defs.appendChild(marker);
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('stroke',color);l.setAttribute('stroke-width','2.2');l.setAttribute('marker-end',`url(#${id})`); svg.appendChild(l);
+  if(label){ const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',(x1+x2)/2+4);t.setAttribute('y',(y1+y2)/2-4);t.setAttribute('class','load-label');t.textContent=label; svg.appendChild(t); }
+}
+function drawLoads(svg, mapper=mapPoint){
+  const loads=generateLoadCases()[state.activeCase].loads; const mp=nodeMap(); const maxP=Math.max(0.1,...loads.map(l=>Math.hypot(l.Fx,l.Fy)));
+  for(const l of loads){
+    if(Math.abs(l.Fx)<1e-9 && Math.abs(l.Fy)<1e-9) continue;
+    const p=mapper(mp[l.node]); const scale=36/maxP; const x2=p.x + l.Fx*scale; const y2=p.y - l.Fy*scale;
+    drawArrow(svg,p.x,p.y,x2,y2,'#d97706',`${fmtSig(Math.hypot(l.Fx,l.Fy),2)} kN`);
+  }
+}
+
+
+function drawReactions(svg, caseResult, mapper=mapPoint){
+  const mp=nodeMap();
+  const byNode={};
+  for(const r of caseResult.reactions){
+    if(!byNode[r.node]) byNode[r.node]={Fx:0,Fy:0};
+    if(r.component==='Rx') byNode[r.node].Fx += r.value;
+    if(r.component==='Ry') byNode[r.node].Fy += r.value;
+  }
+  const values=Object.values(byNode);
+  if(!values.length) return;
+  const maxR=Math.max(0.1,...values.map(v=>Math.hypot(v.Fx,v.Fy)));
+  const scale=42/maxR;
+  for(const [node,v] of Object.entries(byNode)){
+    const mag=Math.hypot(v.Fx,v.Fy);
+    if(mag<1e-8 || !mp[node]) continue;
+    const p=mapper(mp[node]);
+    drawArrow(svg,p.x,p.y,p.x+v.Fx*scale,p.y-v.Fy*scale,'#7c3aed',`R ${fmtSig(mag,2)} kN`);
+  }
+}
+
+function renderMemberLists(){
+  const container=document.getElementById('memberLists'); container.innerHTML='';
+  const groups=['required','bottom','vertical','diagA','diagB','lowerChord','lowerVertical','lowerDiagA','lowerDiagB'];
+  for(const g of groups){
+    const groupMembers=state.candidates.filter(m=>m.group===g);
+    if(!groupMembers.length) continue;
+    const block=document.createElement('details'); block.open=(g==='bottom'||g==='vertical'||g==='lowerChord');
+    const summary=document.createElement('summary'); summary.textContent=`${GROUP_LABEL[g]} (${groupMembers.length}개)`; block.appendChild(summary);
+    const list=document.createElement('div'); list.className='member-list';
+    for(const m of groupMembers){
+      const row=document.createElement('div'); row.className='member-row';
+      const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=!!state.selected[m.id]; chk.disabled=m.required; chk.addEventListener('change',()=>{state.selected[m.id]=chk.checked; state.lastResult=null; renderAll();});
+      const id=document.createElement('div'); id.innerHTML=`<b>${m.id}</b>`;
+      const name=document.createElement('div'); name.textContent=`${m.node_i} - ${m.node_j}`;
+      const sel=document.createElement('select');
+      for(const sid of Object.keys(getSectionData())){ const op=document.createElement('option'); op.value=sid; op.textContent=sectionLabel(sid); sel.appendChild(op); }
+      sel.value=state.sectionByMember[m.id]||'S2'; sel.addEventListener('change',()=>{state.sectionByMember[m.id]=sel.value; state.lastResult=null; renderAll();});
+      row.appendChild(chk); row.appendChild(id); row.appendChild(name); row.appendChild(sel); list.appendChild(row);
+    }
+    block.appendChild(list); container.appendChild(block);
+  }
+}
+
+function updateLoadCalcExample(){
+  const el=document.getElementById('loadCalcExample'); if(!el) return;
+  const set=getSettings(); const dx=set.L/set.n; const q=set.qD+set.qS; const w=q*set.s;
+  const Pint=w*dx; const Pend=0.5*w*dx;
+  el.innerHTML=`예: 기본값에서 대칭 적설 선하중은 (<i>q</i><sub>D</sub>+<i>q</i><sub>S</sub>)<i>s</i>=(${fmt(set.qD,2)}+${fmt(set.qS,2)})×${fmt(set.s,2)}=<b>${fmt(w,2)} kN/m</b>입니다. 패널 간격 Δ<i>x</i>=${fmt(dx,2)} m이면 내부 상부 절점은 ${fmt(Pint,2)} kN, 양 끝 절점은 ${fmt(Pend,2)} kN입니다.`;
+}
+
+function generateLoadCases(){
+  const set=getSettings(); const n=set.n, dx=set.L/n, s=set.s;
+  const ids=[...Array(n+1)].map((_,i)=>`T${i}`);
+  function trib(i){ return (i===0||i===n)?0.5*dx:dx; }
+  function topLoadsFromQ(qFn, includeWind=false){
+    const loads=[];
+    const wX=includeWind ? set.qWh*s : 0;
+    for(let i=0;i<=n;i++){
+      const qY=qFn(i); // + upward, - downward, kN/m2 equivalent vertical load
+      loads.push({node:`T${i}`, Fx:wX*trib(i), Fy:(qY*s)*trib(i)});
+    }
+    return loads;
+  }
+  function snowFactorLeft(i){ return i<n/2 ? 1 : (i===n/2 ? 0.5 : 0); }
+  function makeLC1(){
+    const qDown=set.qD+set.qS; const w=qDown*s;
+    const loads=topLoadsFromQ(()=>-qDown,false);
+    return {name:'LC1 대칭 적설', desc:`전체 지붕에 고정하중+적설하중. (<i>q</i><sub>D</sub>+<i>q</i><sub>S</sub>)<i>s</i>=(${fmt(set.qD,2)}+${fmt(set.qS,2)})×${fmt(s,2)}=<b>${fmt(w,2)} kN/m</b>`, loads};
+  }
+  function makeLC2(){
+    const loads=topLoadsFromQ((i)=>-(set.qD + snowFactorLeft(i)*set.qS),false);
+    return {name:'LC2 비대칭 적설', desc:'왼쪽은 <i>q</i><sub>D</sub>+<i>q</i><sub>S</sub>, 중앙은 <i>q</i><sub>D</sub>+0.5<i>q</i><sub>S</sub>, 오른쪽은 <i>q</i><sub>D</sub>만 적용', loads};
+  }
+  function makeLC3(){
+    const wX=set.qWh*s; const qNet=set.qWu-set.qD; const wY=qNet*s;
+    const loads=topLoadsFromQ(()=>qNet,true);
+    return {name:'LC3 풍하중', desc:`수평 <i>w</i><sub>x</sub>=<i>q</i><sub>W,h</sub><i>s</i>=${fmt(wX,2)} kN/m, 순상향 <i>w</i><sub>y</sub>=(<i>q</i><sub>W,u</sub>-<i>q</i><sub>D</sub>)<i>s</i>=${fmt(wY,2)} kN/m`, loads};
+  }
+  function makeLC4(){
+    const wX=set.qWh*s; const qNet=set.qWu-(set.qD+set.qS); const wY=qNet*s;
+    const loads=topLoadsFromQ(()=>qNet,true);
+    return {name:'LC4 풍하중+대칭 적설', desc:`수평풍 + 전체 적설. 수직 순하중은 [<i>q</i><sub>W,u</sub>-(<i>q</i><sub>D</sub>+<i>q</i><sub>S</sub>)]<i>s</i>=${fmt(wY,2)} kN/m`, loads};
+  }
+  function makeLC5(){
+    const loads=topLoadsFromQ((i)=>set.qWu-(set.qD+snowFactorLeft(i)*set.qS),true);
+    return {name:'LC5 풍하중+비대칭 적설', desc:'수평풍 + 왼쪽 편재 적설. 왼쪽은 [<i>q</i><sub>W,u</sub>-(<i>q</i><sub>D</sub>+<i>q</i><sub>S</sub>)]<i>s</i>, 오른쪽은 (<i>q</i><sub>W,u</sub>-<i>q</i><sub>D</sub>)<i>s</i>를 적용', loads};
+  }
+  return {LC1:makeLC1(), LC2:makeLC2(), LC3:makeLC3(), LC4:makeLC4(), LC5:makeLC5()};
+}
+function renderLoadTabs(){
+  updateLoadCalcExample();
+  const tabs=document.getElementById('loadTabs'); tabs.innerHTML=''; const cases=generateLoadCases();
+  for(const key of Object.keys(cases)){
+    const b=document.createElement('div'); b.className='tab'+(state.activeCase===key?' active':''); b.textContent=cases[key].name; b.onclick=()=>{state.activeCase=key; renderAll();}; tabs.appendChild(b);
+  }
+  document.getElementById('loadExplanation').innerHTML=`<b>${cases[state.activeCase].name}</b>: ${cases[state.activeCase].desc}`;
+}
+
+function validateModel(){
+  const msgs=[]; const ids=new Set(state.nodes.map(n=>n.id)); const seen=new Set();
+  for(const m of activeMembers()){
+    if(!ids.has(m.node_i) || !ids.has(m.node_j)) msgs.push(`존재하지 않는 절점이 포함됨: ${m.id}`);
+    const key=normMember(m.node_i,m.node_j); if(seen.has(key)) msgs.push(`중복 부재: ${m.node_i}-${m.node_j}`); seen.add(key);
+  }
+  const requiredMissing=state.candidates.filter(m=>m.required && !state.selected[m.id]).map(m=>m.id);
+  if(requiredMissing.length) msgs.push(`필수 부재 누락: ${requiredMissing.join(', ')}`);
+  if(activeMembers().length<3) msgs.push('부재 수가 너무 적습니다. 구조가 불안정할 가능성이 큽니다.');
+  return msgs;
+}
+
+function runAnalysis(){
+  resetGeneratedModel(true); // refresh geometry but keep selection by ID
+  const warnings=validateModel();
+  const results={cases:{}, feasible:true, warnings, cost:{}, activeMembers:activeMembers()};
+
+  // Each load case is solved separately, but the stiffness matrix K is determined by
+  // geometry, member selection, sections, and supports. Therefore, if K is singular,
+  // it is a model-stability problem rather than an LC-specific load problem.
+  let solvedCount = 0;
+  const loadCases = generateLoadCases();
+  for(const [key,lc] of Object.entries(loadCases)){
+    try{
+      results.cases[key]=solveCase(lc.loads, key, lc.name);
+      solvedCount += 1;
+    }catch(e){
+      const isModelInstability = /singular|특이행렬|불안정|mechanism|기구화/i.test(e.message || '');
+      results.cases[key]={
+        caseKey:key, caseName:lc.name, loads:lc.loads, error:e.message, errorType:isModelInstability?'model_instability':'analysis_error', feasible:false,
+        memberResults:[], nodeResults:[], reactions:[],
+        maxStressRatio:NaN, maxBucklingRatio:NaN, maxV:NaN, maxDisp:NaN,
+        maxAbsN:NaN, maxHorizontalReactionAbs:NaN
+      };
+    }
+  }
+
+  if(solvedCount===0){
+    results.modelUnstable = true;
+    results.error = '강성행렬 K가 성립하지 않아 LC1~LC5 모두 해석할 수 없습니다. 이는 특정 하중 케이스의 문제가 아니라 부재 배치/지점조건에 의한 불안정 구조 문제입니다.';
+  }
+
+  computeCostAndSummary(results);
+  state.lastResult=results;
+  renderAll();
+  if(typeof showScreen==='function') showScreen('results');
+}
+
+function dofIndex(nodeIndex, comp){ return nodeIndex*2 + (comp==='x'?0:1); }
+function solveCase(loads, caseKey, caseName){
+  // 해석에는 실제 선택된 부재에 연결된 절점만 사용한다.
+  // 화면에는 후보 절점이 모두 보이지만, 연결되지 않은 후보 절점을 강성행렬에 넣으면
+  // 0강성 자유도가 생겨 불필요한 singular matrix 오류가 발생할 수 있다.
+  const activeIds = activeNodeIds();
+  const setForSupports = getSettings();
+  activeIds.add('B0'); activeIds.add(`B${setForSupports.n}`);
+  const nodes=state.nodes.filter(nd => activeIds.has(nd.id));
+  const nNode=nodes.length; const ndof=2*nNode; const idToIndex={}; nodes.forEach((n,i)=>idToIndex[n.id]=i);
+  const K=Array.from({length:ndof},()=>Array(ndof).fill(0));
+  const F=Array(ndof).fill(0); const E=getSettings().E;
+  const mp=nodeMap(); const members=activeMembers();
+  for(const m of members){
+    const ni=idToIndex[m.node_i], nj=idToIndex[m.node_j]; const a=mp[m.node_i], b=mp[m.node_j];
+    const dx=b.x-a.x, dy=b.y-a.y; const L=Math.hypot(dx,dy); if(L<1e-9) throw new Error(`부재 ${m.id} 길이가 0입니다.`);
+    const c=dx/L, s=dy/L; const sec=getSectionData()[state.sectionByMember[m.id]||'S2']; const k=E*sec.A/L;
+    const ke=[[ c*c, c*s,-c*c,-c*s], [ c*s, s*s,-c*s,-s*s], [-c*c,-c*s, c*c, c*s], [-c*s,-s*s, c*s, s*s]].map(row=>row.map(v=>v*k));
+    const dofs=[dofIndex(ni,'x'),dofIndex(ni,'y'),dofIndex(nj,'x'),dofIndex(nj,'y')];
+    for(let r=0;r<4;r++) for(let col=0;col<4;col++) K[dofs[r]][dofs[col]] += ke[r][col];
+  }
+  for(const l of loads){
+    if(!(l.node in idToIndex)) continue; const idx=idToIndex[l.node]; F[dofIndex(idx,'x')]+=l.Fx; F[dofIndex(idx,'y')]+=l.Fy;
+  }
+  const fixed=[]; const n=getSettings().n;
+  fixed.push(dofIndex(idToIndex['B0'],'x'), dofIndex(idToIndex['B0'],'y'));
+  fixed.push(dofIndex(idToIndex[`B${n}`],'y'));
+  if(getSettings().supportMode==='pin_pin') fixed.push(dofIndex(idToIndex[`B${n}`],'x'));
+  const fixedSet=new Set(fixed); const free=[]; for(let i=0;i<ndof;i++) if(!fixedSet.has(i)) free.push(i);
+  const Kff=free.map(i=>free.map(j=>K[i][j])); const Ff=free.map(i=>F[i]);
+  const uf=gaussianSolve(Kff,Ff);
+  const u=Array(ndof).fill(0); free.forEach((dof,i)=>u[dof]=uf[i]);
+  // reactions R=K u - F
+  const Ku=matVec(K,u); const reactions=[];
+  for(const dof of fixed){
+    const idx=Math.floor(dof/2), comp=dof%2===0?'Rx':'Ry'; reactions.push({node:nodes[idx].id, component:comp, value:Ku[dof]-F[dof]});
+  }
+  const memberResults=[]; let maxStressRatio=0, maxBucklingRatio=0, maxAbsN=0;
+  const set=getSettings();
+  for(const m of members){
+    const ni=idToIndex[m.node_i], nj=idToIndex[m.node_j]; const a=mp[m.node_i], b=mp[m.node_j]; const dx=b.x-a.x, dy=b.y-a.y; const L=Math.hypot(dx,dy); const c=dx/L, s=dy/L;
+    const secId=state.sectionByMember[m.id]||'S2', sec=getSectionData()[secId];
+    const dux=u[dofIndex(nj,'x')]-u[dofIndex(ni,'x')], duy=u[dofIndex(nj,'y')]-u[dofIndex(ni,'y')];
+    const delta=c*dux+s*duy; const N=set.E*sec.A/L*delta; // kN, tension positive
+    const sigma_kNm2=N/sec.A; const sigma_MPa=sigma_kNm2/1000; const stressRatio=Math.abs(sigma_MPa)/set.sigmaAllowMPa;
+    let Pcr=null, bucklingRatio=0;
+    if(N<0){ Pcr=Math.PI*Math.PI*set.E*sec.I/Math.pow(set.Kfactor*L,2); bucklingRatio=Math.abs(N)/Pcr; }
+    maxStressRatio=Math.max(maxStressRatio,stressRatio); maxBucklingRatio=Math.max(maxBucklingRatio,bucklingRatio); maxAbsN=Math.max(maxAbsN,Math.abs(N));
+    memberResults.push({id:m.id, group:m.group, node_i:m.node_i,node_j:m.node_j,section:secId,length:L,N,TC:N>=0?'인장':'압축',sigma_MPa,stressRatio,Pcr,bucklingRatio,delta});
+  }
+  const nodeResults=nodes.map((nd,i)=>({id:nd.id,ux:u[dofIndex(i,'x')],uy:u[dofIndex(i,'y')],disp:Math.hypot(u[dofIndex(i,'x')],u[dofIndex(i,'y')])}));
+  const maxV=Math.max(...nodeResults.map(r=>Math.abs(r.uy))); const maxDisp=Math.max(...nodeResults.map(r=>r.disp));
+  // 강성행렬이 풀린 경우에는 특정 LC에서 변위가 매우 커도 '해석 불가'가 아니라 처짐/대변위 실패로 표시한다.
+  // 진짜 모델 불안정은 gaussianSolve()의 singular matrix 판정으로 처리한다.
+  const largeDisplacementWarning = maxDisp > set.L;
+  const maxHorizontalReactionAbs=reactions.filter(r=>r.component==='Rx').reduce((a,b)=>a+Math.abs(b.value),0);
+  const feasible=maxStressRatio<=1 && maxBucklingRatio<=1 && maxV<=set.L/set.deflectionLimitDiv && !largeDisplacementWarning;
+  return {caseKey, caseName, loads, u, reactions, memberResults, nodeResults, maxStressRatio, maxBucklingRatio, maxV, maxDisp, maxAbsN, maxHorizontalReactionAbs, feasible, largeDisplacementWarning};
+}
+function gaussianSolve(A,b){
+  const n=A.length; const M=A.map((row,i)=>row.concat([b[i]]));
+  let scale=1;
+  for(const row of A) for(const v of row) scale=Math.max(scale, Math.abs(v));
+  // 절대오차가 아니라 전체 강성 크기에 대한 상대 기준으로 특이행렬을 판정한다.
+  // 일부 mechanism은 수치적으로 거의 singular여도 아주 작은 pivot 때문에 비정상적으로 큰 변위가 나올 수 있다.
+  const EPS=1e-10*scale;
+  for(let k=0;k<n;k++){
+    let piv=k; let max=Math.abs(M[k][k]);
+    for(let i=k+1;i<n;i++){ if(Math.abs(M[i][k])>max){max=Math.abs(M[i][k]);piv=i;} }
+    if(max<EPS) throw new Error('강성행렬이 특이행렬(singular matrix) 또는 거의 특이행렬입니다. 구조가 불안정 구조(mechanism)일 가능성이 큽니다. 대각재/하현재/지점조건을 확인하세요.');
+    if(piv!==k){ const tmp=M[k]; M[k]=M[piv]; M[piv]=tmp; }
+    const diag=M[k][k]; for(let j=k;j<=n;j++) M[k][j]/=diag;
+    for(let i=0;i<n;i++){
+      if(i===k) continue; const factor=M[i][k]; if(Math.abs(factor)<1e-14) continue;
+      for(let j=k;j<=n;j++) M[i][j]-=factor*M[k][j];
+    }
+  }
+  return M.map(row=>row[n]);
+}
+function matVec(A,x){ return A.map(row=>row.reduce((sum,v,i)=>sum+v*x[i],0)); }
+
+function computeCostAndSummary(results){
+  const set=getSettings(); const members=activeMembers(); const mp=nodeMap();
+  let materialCost=0, totalLength=0; const activeNodes=new Set();
+  for(const m of members){
+    const a=mp[m.node_i], b=mp[m.node_j]; const L=Math.hypot(b.x-a.x,b.y-a.y); const sec=getSectionData()[state.sectionByMember[m.id]||'S2'];
+    materialCost+=sec.cost*L; totalLength+=L; activeNodes.add(m.node_i); activeNodes.add(m.node_j);
+  }
+  const memberCost=set.memberFabCost*members.length; const jointCost=set.jointCost*activeNodes.size;
+  const validCases=Object.values(results.cases).filter(c=>!c.error);
+  const maxHReaction=validCases.length ? Math.max(...validCases.map(c=>c.maxHorizontalReactionAbs)) : 0;
+  const reactionCost=set.reactionCost*maxHReaction;
+  const totalCost=materialCost+memberCost+jointCost+reactionCost;
+  const maxStressRatio=validCases.length ? Math.max(...validCases.map(c=>c.maxStressRatio)) : NaN;
+  const maxBucklingRatio=validCases.length ? Math.max(...validCases.map(c=>c.maxBucklingRatio)) : NaN;
+  const maxV=validCases.length ? Math.max(...validCases.map(c=>c.maxV)) : NaN;
+  const feasible=validCases.length===Object.values(results.cases).length && validCases.every(c=>c.feasible) && !results.warnings.length;
+  results.cost={materialCost,memberCost,jointCost,reactionCost,totalCost,totalLength,memberCount:members.length,nodeCount:activeNodes.size,maxHReaction};
+  results.summary={maxStressRatio,maxBucklingRatio,maxV,feasible, deflectionLimit:set.L/set.deflectionLimitDiv, solvedCaseCount:validCases.length};
+}
+
+function renderResults(){
+  const status=document.getElementById('statusBox'); const metrics=document.getElementById('summaryMetrics'); const casesDiv=document.getElementById('caseResults');
+  metrics.innerHTML=''; casesDiv.innerHTML='';
+  const r=state.lastResult;
+  if(!r){ status.className='warn'; status.textContent='아직 해석을 실행하지 않았습니다.'; return; }
+  if(r.modelUnstable){
+    status.className='errorbox';
+    status.innerHTML=`<b>모델 불안정:</b> ${r.error}<br><span class="small">강성행렬 <i>K</i>는 하중 케이스가 아니라 구조 형상·부재 연결·지점조건으로 결정됩니다. 따라서 이 경우는 LC1 하나만의 문제가 아니라 LC1~LC5 모두 해석 불가입니다.</span>`;
+  }
+  else if(r.error){
+    status.className='errorbox';
+    status.innerHTML=`<b>해석 전 입력 오류:</b> ${r.error}`;
+  }
+  else if(r.summary.feasible){ status.className='okbox'; status.innerHTML='<b>적격 설계안:</b> 모든 하중 케이스에서 응력·좌굴·처짐 조건을 만족합니다.'; }
+  else { status.className='errorbox'; status.innerHTML='<b>부적격 설계안:</b> 하나 이상의 하중 케이스에서 응력, 좌굴 또는 처짐 조건을 만족하지 못했습니다. 각 LC 상세 결과를 확인하세요.'; }
+  if(r.warnings && r.warnings.length) status.innerHTML += '<br><b>모델링 참고:</b> '+r.warnings.join(' / ');
+  const c=r.cost, s=r.summary;
+  metrics.innerHTML=`
+    <div class="result-title">종합 지표</div>
+    ${metric('총 비용', `${fmt(c.totalCost,1)} CP`, true)}
+    ${metric('총 부재 수', `${c.memberCount} 개`, true)}
+    ${metric('총 부재 길이', `${fmt(c.totalLength,2)} m`, true)}
+    ${metric('최대 응력비', fmt(s.maxStressRatio,3), s.maxStressRatio<=1)}
+    ${metric('최대 좌굴비', fmt(s.maxBucklingRatio,3), s.maxBucklingRatio<=1)}
+    ${metric('최대 수직처짐', `${fmt(s.maxV*1000,1)} mm / 허용 ${fmt(s.deflectionLimit*1000,1)} mm`, s.maxV<=s.deflectionLimit)}
+    ${metric('최대 수평반력 합', `${fmt(c.maxHReaction,2)} kN`, true)}
+  `;
+  for(const [key,cr] of Object.entries(r.cases)){
+    const box=document.createElement('details'); box.open=(key===state.activeCase);
+    const sum=document.createElement('summary');
+    if(cr.error) sum.innerHTML=`${cr.caseName} <span class="pill red">해석 불가</span>`;
+    else {
+      const reasonText = cr.failureReasons && cr.failureReasons.length ? ` · ${cr.failureReasons.join(', ')}` : '';
+      sum.innerHTML=`${cr.caseName} <span class="pill blue">해석 가능</span> <span class="pill ${cr.feasible?'green':'red'}">${cr.feasible?'통과':'검토 필요'}</span>${reasonText}`;
+    }
+    box.appendChild(sum);
+    const body=document.createElement('div'); body.className='body';
+    if(cr.error){
+      body.innerHTML=`<div class="errorbox"><b>해석 불가:</b> ${cr.error}<br><span class="small">이 오류는 보통 부재 배치가 구조적으로 불안정할 때 발생합니다. 대각재, 하현재, 지점조건을 확인하세요.</span></div>`;
+    }else{
+      const critical=cr.memberResults.slice().sort((a,b)=>Math.max(b.stressRatio,b.bucklingRatio)-Math.max(a.stressRatio,a.bucklingRatio)).slice(0,8);
+      body.innerHTML=`
+        <div class="grid2">
+          <div>${metric('최대 응력비',fmt(cr.maxStressRatio,3),cr.maxStressRatio<=1)}</div>
+          <div>${metric('최대 좌굴비',fmt(cr.maxBucklingRatio,3),cr.maxBucklingRatio<=1)}</div>
+          <div>${metric('최대 수직처짐',`${fmt(cr.maxV*1000,1)} mm`,cr.maxV<=getSettings().L/getSettings().deflectionLimitDiv)}</div>
+          <div>${metric('수평반력 합',`${fmt(cr.maxHorizontalReactionAbs,2)} kN`,true)}</div>
+        </div>
+        ${cr.largeDisplacementWarning ? '<div class="warn"><b>대변위 경고:</b> 해석은 수행되었지만 변위가 경간보다 클 정도로 과도합니다. 이는 실제로는 부적격 설계로 보아야 하며, 부재 배치 보강이 필요합니다.</div>' : ''}
+        <div class="result-title">취약 부재 Top 8</div>
+        ${memberTable(critical)}
+        <div class="result-title">지점반력</div>
+        ${reactionTable(cr.reactions)}
+      `;
+    }
+    box.appendChild(body); casesDiv.appendChild(box);
+  }
+}
+function metric(label,value,ok){ return `<div class="metric ${ok?'ok':'bad'}"><span>${label}</span><b>${value}</b></div>`; }
+function memberTable(rows){
+  let html='<table><tr><th>부재</th><th>절점</th><th>단면</th><th><i>N</i> (kN)</th><th>T/C</th><th>|<i>σ</i>|/<i>σ</i><sub>allow</sub></th><th>|<i>N</i><sub>c</sub>|/<i>P</i><sub>cr</sub></th></tr>';
+  for(const r of rows){ html+=`<tr><td class="left">${r.id}</td><td class="left nowrap">${r.node_i}-${r.node_j}</td><td>${r.section}</td><td>${fmt(r.N,2)}</td><td>${r.TC}</td><td>${fmt(r.stressRatio,3)}</td><td>${fmt(r.bucklingRatio,3)}</td></tr>`; }
+  return html+'</table>';
+}
+function reactionTable(rows){
+  let html='<table><tr><th>절점</th><th>성분</th><th>반력 (kN)</th></tr>';
+  for(const r of rows){ html+=`<tr><td class="left">${r.node}</td><td>${r.component}</td><td>${fmt(r.value,2)}</td></tr>`; }
+  return html+'</table>';
+}
+
+function renderSavedDesigns(){
+  const div=document.getElementById('savedDesigns'); const saved=JSON.parse(localStorage.getItem('trussSavedDesigns')||'[]');
+  if(!saved.length){ div.innerHTML='<div class="small">저장된 설계안이 없습니다.</div>'; return; }
+  let html='<table><tr><th>설계안</th><th>형상</th><th>비용</th><th>부재수</th><th>응력비</th><th>좌굴비</th><th>처짐(mm)</th><th>판정</th></tr>';
+  saved.forEach((d,i)=>{ html+=`<tr><td class="left">${i+1}. ${escapeHtml(d.name)}</td><td>${d.profile}</td><td>${fmt(d.cost,1)}</td><td>${d.members}</td><td>${fmt(d.stress,3)}</td><td>${fmt(d.buckling,3)}</td><td>${fmt(d.defl_mm,1)}</td><td>${d.feasible?'통과':'검토'}</td></tr>`; });
+  html+='</table>'; div.innerHTML=html;
+}
+function saveDesignSlot(){
+  if(!state.lastResult || state.lastResult.error){ alert('먼저 해석을 성공적으로 실행하세요.'); return; }
+  const name=prompt('설계안 이름을 입력하세요. 예: Design 1 저비용형', `Design ${new Date().toLocaleTimeString('ko-KR')}`); if(!name) return;
+  const r=state.lastResult; const saved=JSON.parse(localStorage.getItem('trussSavedDesigns')||'[]');
+  saved.push({name, profile:val('roofProfile')==='gable'?'박공':'아치', cost:r.cost.totalCost, members:r.cost.memberCount, stress:r.summary.maxStressRatio, buckling:r.summary.maxBucklingRatio, defl_mm:r.summary.maxV*1000, feasible:r.summary.feasible, input:buildInputObject()});
+  localStorage.setItem('trussSavedDesigns', JSON.stringify(saved)); renderSavedDesigns();
+}
+function clearSavedDesigns(){ if(confirm('저장된 설계안 비교표를 모두 삭제할까요?')){localStorage.removeItem('trussSavedDesigns'); renderSavedDesigns();} }
+
+function buildInputObject(){
+  return {settings:getSettings(), sections:getSectionData(), members:activeMembers().map(m=>({id:m.id, node_i:m.node_i,node_j:m.node_j,group:m.group,required:m.required,section:state.sectionByMember[m.id]})), loads:generateLoadCases()};
+}
+function downloadJSON(){
+  const data=JSON.stringify(buildInputObject(),null,2); downloadBlob(data,'truss_design_input.json','application/json');
+}
+function downloadResultsCSV(){
+  if(!state.lastResult || state.lastResult.error){ alert('먼저 해석을 실행하세요.'); return; }
+  let csv='case,member_id,node_i,node_j,section,length_m,axial_force_kN,tension_compression,stress_MPa,stress_ratio,Pcr_kN,buckling_ratio\n';
+  for(const [key,cr] of Object.entries(state.lastResult.cases)){
+    for(const m of cr.memberResults){ csv += `${key},${m.id},${m.node_i},${m.node_j},${m.section},${m.length},${m.N},${m.TC},${m.sigma_MPa},${m.stressRatio},${m.Pcr??''},${m.bucklingRatio}\n`; }
+  }
+  csv += '\nsummary,total_cost_CP,member_count,total_length_m,max_stress_ratio,max_buckling_ratio,max_vertical_deflection_m,feasible\n';
+  const r=state.lastResult; csv += `summary,${r.cost.totalCost},${r.cost.memberCount},${r.cost.totalLength},${r.summary.maxStressRatio},${r.summary.maxBucklingRatio},${r.summary.maxV},${r.summary.feasible}\n`;
+  downloadBlob(csv,'truss_results.csv','text/csv;charset=utf-8');
+}
+function downloadBlob(content, filename, type){ const blob=new Blob([content],{type}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href); }
+function escapeHtml(str){ return String(str).replace(/[&<>'"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[s])); }
+
+function renderAll(){
+  // Don't rebuild selection on every render, except when parameters changed via event handlers we call resetGeneratedModel
+  updateLoadCalcExample(); renderLoadTabs(); renderSvg('design'); renderSvg('results'); renderMemberLists(); renderResults(); renderSavedDesigns();
+}
+function bindInputs(){
+  const regenIds=['roofProfile','roofHeight','spanL','panelN','eaveHeight','lowerLayerEnabled','lowerLayerDepth'];
+  regenIds.forEach(id=>document.getElementById(id).addEventListener('change',()=>{resetGeneratedModel(true); state.lastResult=null; renderAll();}));
+  const redrawIds=['qD','qS','qWh','qWu','frameSpacing','supportMode','E_GPa','sigmaAllow','deflectionDiv','memberFabCost','jointCost','reactionCost','Kfactor'];
+  redrawIds.forEach(id=>document.getElementById(id).addEventListener('change',()=>{state.lastResult=null; renderAll();}));
+  document.getElementById('vizMode').addEventListener('change',()=>{renderAll();});
+  document.querySelectorAll('.section-input').forEach(el=>el.addEventListener('change',()=>{state.lastResult=null; renderAll();}));
+}
+
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===`screen-${name}`));
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.screen===name));
+  if(name==='design') renderSvg('design');
+  if(name==='results') renderSvg('results');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function init(){ resetGeneratedModel(false); loadPreset('stable'); bindInputs(); renderAll(); showScreen('design'); }
+init();
+
+</script>
+</body>
+</html>
