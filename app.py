@@ -57,20 +57,6 @@ st.markdown(
         margin-bottom: 10px;
     }
 
-    .sub-title {
-        font-size: 17px;
-        font-weight: 800;
-        color: #111827;
-        margin-top: 8px;
-        margin-bottom: 8px;
-    }
-
-    .desc {
-        font-size: 14px;
-        color: #64748b;
-        line-height: 1.55;
-    }
-
     .hint-box {
         background: #eef2ff;
         border-left: 5px solid #2563eb;
@@ -429,9 +415,7 @@ def recommendation_agent(state: DesignState):
     else:
         region_note = "지역별 기본풍속 및 적설하중 기준값을 확인하여 구조검토가 필요합니다."
 
-    # -----------------------------------------------------
     # 풍압계수 자동 추천
-    # -----------------------------------------------------
     opening_type = "일반 밀폐형"
 
     if crop in ["토마토", "파프리카", "오이"]:
@@ -781,8 +765,6 @@ def compute_load_result(
 
 
 def compute_structural_analysis(result, load_result):
-    rec = result["recommendation_result"]
-
     total_width = result["total_width"]
     span_count = result["span_count"]
     ridge_height = result["ridge_height"]
