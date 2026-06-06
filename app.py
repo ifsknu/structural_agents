@@ -1146,7 +1146,16 @@ elif st.session_state["screen"] == "load":
         else:
             set_load_defaults(result)
 
+            rec = result["recommendation_result"]
+
+            if "load_cpe" not in st.session_state:
+                st.session_state["load_cpe"] = float(rec["대표 지붕부 외압계수 Cpe"])
+
+            if "load_cpi" not in st.session_state:
+                st.session_state["load_cpi"] = float(rec["내압계수 Cpi"])
+
             st.markdown('<div class="section-title">하중 조건</div>', unsafe_allow_html=True)
+
             st.markdown(
                 """
                 <div class="hint-box">
@@ -1198,7 +1207,7 @@ elif st.session_state["screen"] == "load":
                         key="load_frame_spacing"
                     )
 
-                                        st.divider()
+                    st.divider()
 
                     st.markdown("### 풍압계수")
 
@@ -1206,6 +1215,19 @@ elif st.session_state["screen"] == "load":
                         "초기값은 2번 추천안에서 자동 선정된 외압계수와 내압계수입니다. "
                         "필요하면 직접 수정해서 다시 계산할 수 있습니다."
                     )
+
+                    col_reset, col_blank = st.columns([1, 2])
+
+                    with col_reset:
+                        reset_coeff = st.button(
+                            "추천 풍압계수 다시 불러오기",
+                            use_container_width=True
+                        )
+
+                    if reset_coeff:
+                        st.session_state["load_cpe"] = float(rec["대표 지붕부 외압계수 Cpe"])
+                        st.session_state["load_cpi"] = float(rec["내압계수 Cpi"])
+                        st.rerun()
 
                     Cpe = st.number_input(
                         "외압계수 Cpe",
@@ -1224,35 +1246,7 @@ elif st.session_state["screen"] == "load":
                     net_cp_view = Cpe - Cpi
                     st.info(f"현재 순압계수 Cpe - Cpi = {net_cp_view:.2f}")
 
-                    col_reset, col_blank = st.columns([1, 2])
-
-                    with col_reset:
-                        if st.button("추천 풍압계수 다시 불러오기", use_container_width=True):
-                            st.session_state["load_cpe"] = float(
-                                result["recommendation_result"]["대표 지붕부 외압계수 Cpe"]
-                            )
-                            st.session_state["load_cpi"] = float(
-                                result["recommendation_result"]["내압계수 Cpi"]
-                            )
-                            st.rerun()
-
                     st.divider()
-
-                    if st.button("하중 계산 실행", type="primary", use_container_width=True):
-                        load_result = compute_load_result(
-                            V=V,
-                            dead_load=dead_load,
-                            ground_snow_load=ground_snow_load,
-                            snow_shape_factor=snow_shape_factor,
-                            frame_spacing=frame_spacing,
-                            Cpe=Cpe,
-                            Cpi=Cpi
-                        )
-
-                        st.session_state["load_result"] = load_result
-                        st.session_state["analysis_result"] = compute_structural_analysis(result, load_result)
-                        st.session_state["safety_result"] = None
-                        st.success("하중 계산이 완료되었습니다.")
 
                     if st.button("하중 계산 실행", type="primary", use_container_width=True):
                         load_result = compute_load_result(
@@ -1303,6 +1297,7 @@ elif st.session_state["screen"] == "load":
                             )
 
                         st.markdown("#### 하중조합")
+
                         st.table([{
                             "LC1 D": load["LC1 D [kN/m]"],
                             "LC2 D+S": load["LC2 D+S [kN/m]"],
@@ -1312,7 +1307,6 @@ elif st.session_state["screen"] == "load":
 
                         with st.expander("전체 하중계산 결과 보기"):
                             st.table([load])
-
 
 # =========================================================
 # 16. 4번 화면: 구조해석
