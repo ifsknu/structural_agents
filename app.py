@@ -10,7 +10,7 @@ from langgraph.graph import StateGraph, END
 # 1. 페이지 설정
 # =========================================================
 st.set_page_config(
-    page_title="자연어 기반 온실 예비설계 및 구조검토 시스템",
+    page_title="자연어 기반 온실 예비설계 시스템",
     layout="wide"
 )
 
@@ -21,22 +21,25 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .main {
-        background-color: #f6f8fb;
+    .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 2rem;
+        max-width: 1500px;
     }
 
     .app-header {
         background: linear-gradient(135deg, #0f172a, #1d4ed8);
         color: white;
         padding: 24px 30px;
-        border-radius: 0 0 18px 18px;
+        border-radius: 18px;
         margin-bottom: 18px;
         border-bottom: 4px solid #93c5fd;
     }
 
     .app-header h1 {
         margin: 0;
-        font-size: 27px;
+        font-size: 30px;
+        font-weight: 900;
         line-height: 1.25;
     }
 
@@ -44,111 +47,157 @@ st.markdown(
         margin: 8px 0 0;
         color: #dbeafe;
         font-size: 15px;
+        font-weight: 500;
     }
 
-    .card {
-        background: white;
-        border: 1px solid #d1d5db;
-        border-radius: 14px;
-        padding: 18px 20px;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-        margin-bottom: 14px;
+    .section-title {
+        font-size: 22px;
+        font-weight: 900;
+        color: #111827;
+        margin-bottom: 10px;
     }
 
-    .card-title {
-        font-size: 18px;
+    .sub-title {
+        font-size: 17px;
         font-weight: 800;
         color: #111827;
-        margin-bottom: 12px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #e5e7eb;
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+
+    .desc {
+        font-size: 14px;
+        color: #64748b;
+        line-height: 1.55;
     }
 
     .hint-box {
         background: #eef2ff;
-        border-left: 4px solid #2563eb;
-        padding: 10px 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-        font-size: 13px;
-        line-height: 1.55;
+        border-left: 5px solid #2563eb;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin: 10px 0 16px 0;
+        font-size: 14px;
+        line-height: 1.6;
         color: #1f2937;
     }
 
     .warn-box {
         background: #fef3c7;
-        border-left: 4px solid #d97706;
-        padding: 10px 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-        font-size: 13px;
-        line-height: 1.55;
+        border-left: 5px solid #d97706;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin: 10px 0 16px 0;
+        font-size: 14px;
+        line-height: 1.6;
         color: #1f2937;
     }
 
     .ok-box {
         background: #d1fae5;
-        border-left: 4px solid #059669;
-        padding: 10px 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-        font-size: 13px;
-        line-height: 1.55;
+        border-left: 5px solid #059669;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin: 10px 0 16px 0;
+        font-size: 14px;
+        line-height: 1.6;
         color: #064e3b;
     }
 
     .metric-card {
         background: white;
         border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 14px 16px;
-        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+        border-radius: 16px;
+        padding: 16px 18px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        min-height: 96px;
+        margin-bottom: 10px;
     }
 
     .metric-card span {
         display: block;
         color: #64748b;
-        font-size: 12px;
-        margin-bottom: 4px;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 6px;
     }
 
     .metric-card b {
         display: block;
-        font-size: 21px;
+        font-size: 22px;
         color: #0f172a;
+        font-weight: 900;
+        line-height: 1.25;
     }
 
-    .section-card {
-        border: 1px solid #dbe3ee;
-        border-radius: 16px;
-        background: linear-gradient(180deg, #ffffff, #f8fafc);
-        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06);
-        padding: 14px;
-        margin-bottom: 12px;
-    }
-
-    .section-card h3 {
-        margin: 0 0 8px;
-        font-size: 18px;
-        color: #0f172a;
-    }
-
-    .section-note {
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin: 8px 0;
-        font-size: 13px;
-        line-height: 1.55;
-        color: #334155;
-    }
-
-    .top-help {
-        font-size: 13px;
+    .metric-card small {
+        display: block;
+        margin-top: 6px;
         color: #64748b;
-        margin-top: -6px;
-        margin-bottom: 12px;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .info-card {
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        margin-bottom: 14px;
+    }
+
+    .info-card h3 {
+        margin: 0 0 12px 0;
+        font-size: 20px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .pill {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: #dbeafe;
+        color: #1e40af;
+        font-size: 13px;
+        font-weight: 800;
+        margin-right: 6px;
+        margin-bottom: 6px;
+    }
+
+    .big-result {
+        background: linear-gradient(135deg, #eff6ff, #ffffff);
+        border: 1px solid #bfdbfe;
+        border-radius: 18px;
+        padding: 20px 22px;
+        margin-bottom: 16px;
+    }
+
+    .big-result h2 {
+        font-size: 25px;
+        font-weight: 900;
+        color: #0f172a;
+        margin: 0 0 8px 0;
+    }
+
+    .big-result p {
+        font-size: 15px;
+        color: #334155;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    div[data-testid="stButton"] > button {
+        font-weight: 800;
+        border-radius: 12px;
+        min-height: 48px;
+    }
+
+    label {
+        font-weight: 800 !important;
+        color: #111827 !important;
+        font-size: 14px !important;
     }
     </style>
     """,
@@ -157,7 +206,7 @@ st.markdown(
 
 
 # =========================================================
-# 3. LangGraph State 정의
+# 3. State 정의
 # =========================================================
 class DesignState(TypedDict):
     user_prompt: str
@@ -257,6 +306,7 @@ def parse_request_agent(state: DesignState):
             area_m2 = area_value
 
     missing_fields = []
+
     if not region:
         missing_fields.append("지역")
     if not crop:
@@ -273,9 +323,9 @@ def parse_request_agent(state: DesignState):
 
     state["parsed_result"] = {
         "입력 문장": text,
-        "추출 지역": region if region else "미입력",
-        "추출 작물": crop if crop else "미입력",
-        "추출 규모": f"{area_value:g} {area_unit}" if area_value > 0 else "미입력",
+        "지역": region if region else "미입력",
+        "작물": crop if crop else "미입력",
+        "규모": f"{area_value:g} {area_unit}" if area_value > 0 else "미입력",
         "환산 면적 [m²]": round(area_m2, 2) if area_m2 > 0 else "미입력",
         "부족한 조건": ", ".join(missing_fields) if missing_fields else "없음"
     }
@@ -284,7 +334,7 @@ def parse_request_agent(state: DesignState):
 
 
 # =========================================================
-# 5. 온실 추천안 생성 Agent
+# 5. 온실 추천안 Agent
 # =========================================================
 def recommendation_agent(state: DesignState):
     if state["missing_fields"]:
@@ -294,7 +344,7 @@ def recommendation_agent(state: DesignState):
         state["response_text"] = (
             "추천안을 생성하려면 다음 조건이 더 필요합니다: "
             + ", ".join(state["missing_fields"])
-            + "\n\n예시: `포항에서 딸기 재배용으로 100평 규모 온실 추천해줘`"
+            + "\n\n예시: 포항에서 딸기 재배용으로 100평 규모 온실 추천해줘"
         )
         return state
 
@@ -312,7 +362,7 @@ def recommendation_agent(state: DesignState):
         frame_spacing = 0.6
         member = "Ø31.8 × 1.5t"
         covering = "PO 필름 또는 장기성 필름"
-        reason_crop = "저상 재배 및 비교적 낮은 내부 공간 요구 조건에 적합합니다."
+        reason_crop = "저상 재배 및 비교적 낮은 내부 공간 조건에 적합합니다."
 
     elif crop in ["토마토", "파프리카", "오이"]:
         base_type_single = "고측고 단동 온실"
@@ -406,7 +456,6 @@ def recommendation_agent(state: DesignState):
         "추천 폭 [m]": round(total_width, 2),
         "추천 길이 [m]": round(design_length, 2),
         "예상 설계면적 [m²]": round(estimated_area, 2),
-        "단위 동폭 [m]": width_per_span,
         "연동 수": span_count,
         "처마높이 [m]": eave_height,
         "동고 [m]": ridge_height,
@@ -416,21 +465,18 @@ def recommendation_agent(state: DesignState):
         "추천 피복재": covering,
         "작물 기준 추천 이유": reason_crop,
         "지역 기준 검토사항": region_note,
-        "주의": "본 결과는 예비설계 추천안이며, 최종 설계에는 구조기준에 따른 하중 및 안정성 검토가 필요합니다."
     }
 
     state["response_text"] = (
-        f"{region} 지역에서 {crop} 재배를 위한 약 {area_pyung:.1f}평 규모의 온실로 "
-        f"`{greenhouse_type}`을 추천합니다. "
-        f"예비 치수는 폭 {total_width:.2f} m, 길이 {design_length:.2f} m, "
-        f"처마높이 {eave_height:.2f} m, 동고 {ridge_height:.2f} m입니다."
+        f"{region} 지역 {crop} 재배용 약 {area_pyung:.1f}평 규모의 "
+        f"{greenhouse_type} 추천안입니다."
     )
 
     return state
 
 
 # =========================================================
-# 6. 3D 설계모델 생성 Agent
+# 6. 3D 설계모델 Agent
 # =========================================================
 def drawing_agent(state: DesignState):
     if state["missing_fields"]:
@@ -441,7 +487,6 @@ def drawing_agent(state: DesignState):
     design_length = state["design_length"]
     eave_height = state["eave_height"]
     ridge_height = state["ridge_height"]
-    frame_spacing = state["frame_spacing"]
     span_count = state["span_count"]
     frame_count = state["frame_count"]
     greenhouse_type = state["greenhouse_type"]
@@ -535,10 +580,10 @@ def drawing_agent(state: DesignState):
     add_text(design_length / 2, total_width / 2, ridge_height + 0.5, f"동고 {ridge_height:.2f} m")
     add_text(design_length / 2, -total_width * 0.08, 0, f"길이 {design_length:.2f} m")
     add_text(design_length + design_length * 0.05, total_width / 2, 0, f"폭 {total_width:.2f} m")
-    add_text(0, total_width + total_width * 0.05, eave_height, f"처마높이 {eave_height:.2f} m")
+    add_text(0, total_width + total_width * 0.05, eave_height, f"처마 {eave_height:.2f} m")
 
     fig.update_layout(
-        title=f"3D 온실 와이어프레임 모델 - {greenhouse_type}",
+        title=f"3D 온실 설계 모델 - {greenhouse_type}",
         height=720,
         margin=dict(l=0, r=0, t=50, b=0),
         scene=dict(
@@ -555,7 +600,7 @@ def drawing_agent(state: DesignState):
 
 
 # =========================================================
-# 7. 예비 해석 결과 Agent
+# 7. 예비 검토 Agent
 # =========================================================
 def analysis_agent(state: DesignState):
     if state["missing_fields"]:
@@ -573,7 +618,6 @@ def analysis_agent(state: DesignState):
     roof_rise = ridge_height - eave_height
     bay_width = total_width / span_count
 
-    # 아치 길이 근사
     samples = 80
     arch_len_per_span = 0.0
 
@@ -598,7 +642,6 @@ def analysis_agent(state: DesignState):
     purlin_length = design_length * purlin_count_per_span * span_count
     total_pipe_length = frame_pipe_length + purlin_length
 
-    # 아주 간단한 예비 하중 산정
     q_snow = 0.5
     if state["region"] in ["강원", "평창", "대관령"]:
         q_snow = 1.2
@@ -616,12 +659,10 @@ def analysis_agent(state: DesignState):
     snow_line_load = q_snow * frame_spacing
     wind_line_load = q_wind_kn * 0.9 * frame_spacing
 
-    rough_cost = total_pipe_length * 13
-
-    if state["span_count"] >= 3 or state["design_length"] > 60:
+    if span_count >= 3 or design_length > 60:
         structural_note = "규모가 큰 편이므로 연동부, 기초, 풍하중 검토가 중요합니다."
     else:
-        structural_note = "예비 규모상 일반적인 단동·소규모 연동 온실 검토 단계에 해당합니다."
+        structural_note = "예비 규모상 일반적인 단동 또는 소규모 연동 온실 검토 단계에 해당합니다."
 
     state["analysis_result"] = {
         "예상 총 파이프 길이 [m]": round(total_pipe_length, 2),
@@ -632,9 +673,7 @@ def analysis_agent(state: DesignState):
         "예비 풍하중 선하중 [kN/m]": round(wind_line_load, 3),
         "지상적설하중 가정 [kN/m²]": q_snow,
         "예비 적설 선하중 [kN/m]": round(snow_line_load, 3),
-        "예상 자재비 지표 [CP]": round(rough_cost, 1),
         "예비 구조검토 의견": structural_note,
-        "주의": "현재 해석 결과는 예비 지표입니다. 실제 구조해석은 부재, 절점, 하중조합, 좌굴 검토를 별도 계산해야 합니다."
     }
 
     return state
@@ -696,12 +735,41 @@ def run_design(user_prompt: str):
 
 
 # =========================================================
-# 9. 화면 헤더
+# 9. 유틸 출력 함수
+# =========================================================
+def metric_card(title, value, note=""):
+    note_html = f"<small>{note}</small>" if note else ""
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <span>{title}</span>
+            <b>{value}</b>
+            {note_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def info_card(title, body):
+    st.markdown(
+        f"""
+        <div class="info-card">
+            <h3>{title}</h3>
+            <div class="desc">{body}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =========================================================
+# 10. 화면 헤더
 # =========================================================
 st.markdown(
     """
     <div class="app-header">
-        <h1>자연어 기반 온실 예비설계 및 구조검토 시스템</h1>
+        <h1>자연어 기반 온실 예비설계 시스템</h1>
         <p>지역·작물·규모를 자연어로 입력하면 조건을 추출하고, 온실 추천안과 3D 설계 모델을 생성합니다.</p>
     </div>
     """,
@@ -710,7 +778,7 @@ st.markdown(
 
 
 # =========================================================
-# 10. 세션 상태
+# 11. 세션 상태
 # =========================================================
 if "screen" not in st.session_state:
     st.session_state["screen"] = "design"
@@ -723,188 +791,184 @@ if "user_prompt" not in st.session_state:
 
 
 # =========================================================
-# 11. 상단 버튼형 화면 이동
+# 12. 상단 화면 버튼
 # =========================================================
 nav1, nav2, nav3 = st.columns(3)
 
 with nav1:
-    if st.button("1  설계·부재 선택\n\n자연어 입력, 추천안, 3D 모델", use_container_width=True):
+    if st.button("1. 설계 조건", use_container_width=True):
         st.session_state["screen"] = "design"
 
 with nav2:
-    if st.button("2  재료·비용\n\nS1~S5 단면과 비용식 확인", use_container_width=True):
-        st.session_state["screen"] = "materials"
+    if st.button("2. 추천안 · 3D 모델", use_container_width=True):
+        st.session_state["screen"] = "recommend"
 
 with nav3:
-    if st.button("3  해석 결과\n\n예비 하중·비용·구조검토 지표", use_container_width=True):
+    if st.button("3. 예비 검토 결과", use_container_width=True):
         st.session_state["screen"] = "results"
 
-st.markdown('<div class="top-help">※ index.html의 4단계 화면 중 비교·제출 단계는 제외하고 3단계 구성으로 재배치했습니다.</div>', unsafe_allow_html=True)
-
 
 # =========================================================
-# 12. 1번 화면: 설계·부재 선택
+# 13. 1번 화면: 설계 조건
 # =========================================================
 if st.session_state["screen"] == "design":
-    left, right = st.columns([0.38, 0.62], gap="large")
+    left, right = st.columns([0.36, 0.64], gap="large")
 
     with left:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">1. 자연어 설계 조건</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="section-title">1. 설계 조건</div>', unsafe_allow_html=True)
 
-        st.markdown(
-            """
-            <div class="hint-box">
-            예: <b>포항에서 딸기 재배용으로 100평 규모 온실 추천해줘</b><br>
-            사용자의 문장에서 지역, 작물, 규모를 자동 추출합니다.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        prompt = st.text_area(
-            "자연어 입력",
-            value=st.session_state["user_prompt"],
-            height=120
-        )
-
-        if st.button("AI 추천안 생성", type="primary", use_container_width=True):
-            st.session_state["user_prompt"] = prompt
-            result = run_design(prompt)
-            st.session_state["last_result"] = result
-
-        if st.session_state["last_result"] is not None:
-            result = st.session_state["last_result"]
-
-            st.markdown("#### 조건 추출 결과")
-            st.table([result["parsed_result"]])
-
-            if result["recommendation_result"]:
-                st.markdown("#### 추천 요약")
-                st.success(result["response_text"])
-            else:
-                st.warning(result["response_text"])
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">2. 예비 하중 조건</div>', unsafe_allow_html=True)
-
-        st.number_input("기본풍속 V [m/s]", value=30.0, step=1.0)
-        st.number_input("지상적설하중 [kN/m²]", value=0.5, step=0.1)
-        st.number_input("골조 간격 s [m]", value=0.6, step=0.1)
-
-        st.markdown(
-            """
-            <div class="warn-box">
-            현재 입력값은 예비 검토용입니다. 이후 지역별 기준 데이터베이스와 연결하면 자동 산정 방식으로 바꿀 수 있습니다.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with right:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">3. 3D 구조 모델링 화면</div>', unsafe_allow_html=True)
-
-        if st.session_state["last_result"] is not None and st.session_state["last_result"]["drawing_fig"] is not None:
-            st.plotly_chart(
-                st.session_state["last_result"]["drawing_fig"],
-                use_container_width=True
+            st.markdown(
+                """
+                <div class="hint-box">
+                <b>입력 예시</b><br>
+                포항에서 딸기 재배용으로 100평 규모 온실 추천해줘
+                </div>
+                """,
+                unsafe_allow_html=True
             )
-            st.caption("마우스로 회전, 확대, 축소할 수 있습니다. 프레임 수가 많을 경우 대표 프레임만 표시됩니다.")
-        else:
-            st.info("왼쪽에서 자연어 입력 후 `AI 추천안 생성`을 누르면 3D 설계 모델이 표시됩니다.")
 
-        st.markdown('</div>', unsafe_allow_html=True)
+            prompt = st.text_area(
+                "자연어 입력",
+                value=st.session_state["user_prompt"],
+                height=140,
+                placeholder="예: 대구에서 토마토 200평 규모 온실 추천해줘"
+            )
 
-        if st.session_state["last_result"] is not None and st.session_state["last_result"]["recommendation_result"]:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown('<div class="card-title">4. 온실 예비설계 추천안</div>', unsafe_allow_html=True)
-            st.table([st.session_state["last_result"]["recommendation_result"]])
-            st.markdown('</div>', unsafe_allow_html=True)
+            run_btn = st.button("AI 추천안 생성", type="primary", use_container_width=True)
 
-
-# =========================================================
-# 13. 2번 화면: 재료·비용
-# =========================================================
-elif st.session_state["screen"] == "materials":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="card-title">재료·비용 설정</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        """
-        <div class="section-note">
-        <b>S1~S5는 예비 구조설계용 강관 단면 후보입니다.</b><br>
-        단면적 A가 클수록 축응력은 작아지고, 단면2차모멘트 I가 클수록 좌굴 저항이 커집니다.
-        단가가 높을수록 총비용은 증가합니다.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-
-    sections = [
-        ("S1", "경량", 2.5e-4, 1.5e-8, 9),
-        ("S2", "보통", 4.0e-4, 4.0e-8, 13),
-        ("S3", "중간강성", 6.0e-4, 9.0e-8, 18),
-        ("S4", "고강성", 9.0e-4, 2.0e-7, 26),
-        ("S5", "매우 고강성", 1.2e-3, 3.6e-7, 34),
-    ]
-
-    for col, (sid, desc, A, I, cost) in zip([c1, c2, c3, c4, c5], sections):
-        with col:
-            st.markdown('<div class="section-card">', unsafe_allow_html=True)
-            st.markdown(f"### {sid}")
-            st.caption(desc)
-
-            st.number_input(f"{sid} A [m²]", value=A, format="%.6f", key=f"{sid}_A")
-            st.number_input(f"{sid} I [m⁴]", value=I, format="%.10f", key=f"{sid}_I")
-            st.number_input(f"{sid} 단가 [CP/m]", value=float(cost), key=f"{sid}_cost")
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    left, right = st.columns(2)
-
-    with left:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">공통 재료·판정값</div>', unsafe_allow_html=True)
-        st.number_input("탄성계수 E [GPa]", value=200.0, step=10.0)
-        st.number_input("허용응력 σallow [MPa]", value=150.0, step=10.0)
-        st.number_input("좌굴 유효길이계수 K", value=1.0, step=0.1)
-        st.markdown('</div>', unsafe_allow_html=True)
+            if run_btn:
+                st.session_state["user_prompt"] = prompt
+                st.session_state["last_result"] = run_design(prompt)
+                st.session_state["screen"] = "recommend"
+                st.rerun()
 
     with right:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">비용식</div>', unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div class="section-note">
-            C<sub>total</sub> = Σ c<sub>s(i)</sub>L<sub>i</sub> 
-            + C<sub>m</sub>n<sub>m</sub> 
-            + C<sub>j</sub>n<sub>j</sub> 
-            + C<sub>R</sub>R
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.number_input("부재 제작비 Cm [CP/개]", value=3.0)
-        st.number_input("접합부 비용 Cj [CP/절점]", value=5.0)
-        st.number_input("수평반력 비용 CR [CP/kN]", value=0.2)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="section-title">조건 추출 결과</div>', unsafe_allow_html=True)
+
+            if st.session_state["last_result"] is None:
+                st.info("왼쪽에 자연어 조건을 입력하고 `AI 추천안 생성`을 눌러주세요.")
+            else:
+                result = st.session_state["last_result"]
+                parsed = result["parsed_result"]
+
+                c1, c2, c3, c4 = st.columns(4)
+
+                with c1:
+                    metric_card("지역", parsed["지역"])
+
+                with c2:
+                    metric_card("작물", parsed["작물"])
+
+                with c3:
+                    metric_card("입력 규모", parsed["규모"])
+
+                with c4:
+                    metric_card("환산 면적", f'{parsed["환산 면적 [m²]"]} m²')
+
+                if parsed["부족한 조건"] != "없음":
+                    st.warning(f'부족한 조건: {parsed["부족한 조건"]}')
+                else:
+                    st.success("지역, 작물, 규모가 모두 추출되었습니다.")
+
+                st.markdown("#### 입력 문장")
+                st.write(parsed["입력 문장"])
 
 
 # =========================================================
-# 14. 3번 화면: 해석 결과
+# 14. 2번 화면: 추천안 · 3D 모델
+# =========================================================
+elif st.session_state["screen"] == "recommend":
+    if st.session_state["last_result"] is None:
+        st.warning("아직 추천안이 생성되지 않았습니다. 1번 화면에서 자연어 입력 후 추천안을 생성하세요.")
+    else:
+        result = st.session_state["last_result"]
+
+        if not result["recommendation_result"]:
+            st.warning(result["response_text"])
+        else:
+            rec = result["recommendation_result"]
+
+            st.markdown(
+                f"""
+                <div class="big-result">
+                    <h2>{rec["추천 온실 형식"]}</h2>
+                    <p>
+                    {rec["지역"]} 지역에서 {rec["작물"]} 재배를 위한 
+                    {rec["요구 규모"]} 규모의 예비 온실 추천안입니다.
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            c1, c2, c3, c4 = st.columns(4)
+
+            with c1:
+                metric_card("추천 폭", f'{rec["추천 폭 [m]"]} m')
+
+            with c2:
+                metric_card("추천 길이", f'{rec["추천 길이 [m]"]} m')
+
+            with c3:
+                metric_card("동고", f'{rec["동고 [m]"]} m')
+
+            with c4:
+                metric_card("프레임 수", f'{rec["예상 프레임 수"]} 개')
+
+            left, right = st.columns([0.38, 0.62], gap="large")
+
+            with left:
+                with st.container(border=True):
+                    st.markdown('<div class="section-title">온실 예비설계 추천안</div>', unsafe_allow_html=True)
+
+                    st.markdown(
+                        f"""
+                        <span class="pill">지역: {rec["지역"]}</span>
+                        <span class="pill">작물: {rec["작물"]}</span>
+                        <span class="pill">연동 수: {rec["연동 수"]}</span>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    st.divider()
+
+                    st.markdown("#### 주요 규격")
+                    st.write(f'**요구 면적:** {rec["요구 면적 [m²]"]} m²')
+                    st.write(f'**예상 설계면적:** {rec["예상 설계면적 [m²]"]} m²')
+                    st.write(f'**처마높이:** {rec["처마높이 [m]"]} m')
+                    st.write(f'**프레임 간격:** {rec["프레임 간격 [m]"]} m')
+
+                    st.divider()
+
+                    st.markdown("#### 자재 방향")
+                    st.write(f'**추천 주요 부재:** {rec["추천 주요 부재"]}')
+                    st.write(f'**추천 피복재:** {rec["추천 피복재"]}')
+
+                    st.divider()
+
+                    st.markdown("#### 추천 근거")
+                    st.write(f'**작물 기준:** {rec["작물 기준 추천 이유"]}')
+                    st.write(f'**지역 기준:** {rec["지역 기준 검토사항"]}')
+
+            with right:
+                with st.container(border=True):
+                    st.markdown('<div class="section-title">3D 설계 모델</div>', unsafe_allow_html=True)
+
+                    if result["drawing_fig"] is not None:
+                        st.plotly_chart(result["drawing_fig"], use_container_width=True)
+                        st.caption("마우스로 회전, 확대, 축소할 수 있습니다.")
+                    else:
+                        st.info("추천안이 생성되면 3D 모델이 표시됩니다.")
+
+
+# =========================================================
+# 15. 3번 화면: 예비 검토 결과
 # =========================================================
 elif st.session_state["screen"] == "results":
     if st.session_state["last_result"] is None:
-        st.warning("아직 추천안이 생성되지 않았습니다. 1번 화면에서 자연어 입력 후 추천안을 먼저 생성하세요.")
+        st.warning("아직 추천안이 생성되지 않았습니다. 1번 화면에서 자연어 입력 후 추천안을 생성하세요.")
     else:
         result = st.session_state["last_result"]
 
@@ -912,88 +976,57 @@ elif st.session_state["screen"] == "results":
             st.warning(result["response_text"])
         else:
             analysis = result["analysis_result"]
-            rec = result["recommendation_result"]
 
-            m1, m2, m3 = st.columns(3)
+            st.markdown('<div class="section-title">예비 검토 결과</div>', unsafe_allow_html=True)
 
-            with m1:
-                st.markdown(
-                    f"""
-                    <div class="metric-card">
-                    <span>예상 총 파이프 길이</span>
-                    <b>{analysis["예상 총 파이프 길이 [m]"]} m</b>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+            c1, c2, c3 = st.columns(3)
+
+            with c1:
+                metric_card(
+                    "예상 총 파이프 길이",
+                    f'{analysis["예상 총 파이프 길이 [m]"]} m'
                 )
 
-            with m2:
-                st.markdown(
-                    f"""
-                    <div class="metric-card">
-                    <span>예비 풍하중 선하중</span>
-                    <b>{analysis["예비 풍하중 선하중 [kN/m]"]} kN/m</b>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+            with c2:
+                metric_card(
+                    "예비 풍하중 선하중",
+                    f'{analysis["예비 풍하중 선하중 [kN/m]"]} kN/m'
                 )
 
-            with m3:
-                st.markdown(
-                    f"""
-                    <div class="metric-card">
-                    <span>예상 자재비 지표</span>
-                    <b>{analysis["예상 자재비 지표 [CP]"]} CP</b>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+            with c3:
+                metric_card(
+                    "예비 적설 선하중",
+                    f'{analysis["예비 적설 선하중 [kN/m]"]} kN/m'
                 )
 
             left, right = st.columns([0.62, 0.38], gap="large")
 
             with left:
-                st.markdown('<div class="card">', unsafe_allow_html=True)
-                st.markdown('<div class="card-title">해석 결과 시각화</div>', unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.markdown('<div class="section-title">3D 모델 재확인</div>', unsafe_allow_html=True)
 
-                if result["drawing_fig"] is not None:
-                    st.plotly_chart(result["drawing_fig"], use_container_width=True)
-
-                st.markdown(
-                    """
-                    <div class="hint-box">
-                    현재는 예비 구조검토 단계입니다. 이후 이 화면에 LC1~LC5 하중조합, 축력, 응력비, 좌굴비, 변형 형상을 추가하면 됩니다.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
+                    if result["drawing_fig"] is not None:
+                        st.plotly_chart(result["drawing_fig"], use_container_width=True)
 
             with right:
-                st.markdown('<div class="card">', unsafe_allow_html=True)
-                st.markdown('<div class="card-title">종합 판정</div>', unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.markdown('<div class="section-title">종합 의견</div>', unsafe_allow_html=True)
 
-                st.markdown(
-                    f"""
-                    <div class="ok-box">
-                    <b>예비 추천안 생성 완료</b><br>
-                    {analysis["예비 구조검토 의견"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                    st.markdown(
+                        f"""
+                        <div class="ok-box">
+                        <b>예비 검토 완료</b><br>
+                        {analysis["예비 구조검토 의견"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-                st.markdown("#### 주요 추천 조건")
-                st.table([{
-                    "온실 형식": rec["추천 온실 형식"],
-                    "폭 [m]": rec["추천 폭 [m]"],
-                    "길이 [m]": rec["추천 길이 [m]"],
-                    "동고 [m]": rec["동고 [m]"],
-                    "프레임 수": rec["예상 프레임 수"],
-                }])
+                    st.write(f'**기본풍속 가정:** {analysis["기본풍속 가정 [m/s]"]} m/s')
+                    st.write(f'**속도압 q:** {analysis["속도압 q [kN/m²]"]} kN/m²')
+                    st.write(f'**지상적설하중 가정:** {analysis["지상적설하중 가정 [kN/m²]"]} kN/m²')
+                    st.write(f'**예상 프레임 파이프 길이:** {analysis["예상 프레임 파이프 길이 [m]"]} m')
+                    st.write(f'**예상 도리 길이:** {analysis["예상 도리 길이 [m]"]} m')
 
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown('<div class="card-title">예비 하중·비용 산정 결과</div>', unsafe_allow_html=True)
-            st.table([analysis])
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.expander("전체 예비 검토값 보기"):
+                st.table([analysis])
