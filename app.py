@@ -229,12 +229,17 @@ class DesignState(TypedDict):
     member: str
     covering: str
 
+    external_cp: float
+    internal_cp: float
+    net_cp: float
+    coeff_result: Dict[str, Any]
+    load_result: Dict[str, Any]
+    
     parsed_result: Dict[str, Any]
     recommendation_result: Dict[str, Any]
     analysis_result: Dict[str, Any]
     drawing_fig: Any
     response_text: str
-
 
 # =========================================================
 # 4. 자연어 조건해석 Agent
@@ -431,6 +436,55 @@ def recommendation_agent(state: DesignState):
     else:
         region_note = "지역별 기본풍속 및 적설하중 기준값을 확인하여 구조검토가 필요합니다."
 
+        # -----------------------------------------------------
+    # 온실 형식별 예비 풍압계수 자동 추천
+    # -----------------------------------------------------
+    opening_type = "일반 밀폐형"
+
+    if crop in ["토마토", "파프리카", "오이"]:
+        cpe_roof = -0.8
+        cpe_wall_windward = 0.7
+        cpe_wall_leeward = -0.5
+        coeff_note = "고측고 온실은 지붕부 흡입압 영향이 커질 수 있어 지붕부 외압계수를 다소 보수적으로 적용했습니다."
+    elif span_count >= 2:
+        cpe_roof = -0.8
+        cpe_wall_windward = 0.7
+        cpe_wall_leeward = -0.5
+        coeff_note = "연동형 온실은 지붕부와 연동부 주변의 풍압 검토가 중요하므로 지붕부 흡입압 기준으로 선정했습니다."
+    else:
+        cpe_roof = -0.7
+        cpe_wall_windward = 0.7
+        cpe_wall_leeward = -0.5
+        coeff_note = "단동 아치형 온실의 예비검토용 대표 지붕부 외압계수로 선정했습니다."
+
+    # 일반 밀폐형 기준 예비 내압계수
+    cpi_candidates = [-0.2, 0.2]
+
+    # 지붕 흡입압 검토에서는 Cpe - Cpi의 절댓값이 큰 조합 사용
+    governing_cpi = 0.2
+    net_cp = cpe_roof - governing_cpi
+
+    for cpi in cpi_candidates:
+        temp_net = cpe_roof - cpi
+        if abs(temp_net) > abs(net_cp):
+            governing_cpi = cpi
+            net_cp = temp_net
+
+    state["external_cp"] = cpe_roof
+    state["internal_cp"] = governing_cpi
+    state["net_cp"] = net_cp
+
+    state["coeff_result"] = {
+        "개방 조건": opening_type,
+        "풍상측 벽면 외압계수": cpe_wall_windward,
+        "풍하측 벽면 외압계수": cpe_wall_leeward,
+        "대표 지붕부 외압계수 Cpe": cpe_roof,
+        "내압계수 Cpi": governing_cpi,
+        "순압계수 Cpe-Cpi": round(net_cp, 3),
+        "선정 기준": coeff_note,
+        "주의": "현재 풍압계수는 예비설계용 자동 추천값입니다. 최종 구조설계 시 적용 기준표 값으로 교체해야 합니다."
+    }
+
     if span_count == 1:
         greenhouse_type = base_type_single
     else:
@@ -463,6 +517,10 @@ def recommendation_agent(state: DesignState):
         "예상 프레임 수": frame_count,
         "추천 주요 부재": member,
         "추천 피복재": covering,
+        "대표 지붕부 외압계수 Cpe": cpe_roof,
+        "내압계수 Cpi": governing_cpi,
+        "순압계수 Cpe-Cpi": round(net_cp, 3),
+        "풍압계수 선정 기준": coeff_note,
         "작물 기준 추천 이유": reason_crop,
         "지역 기준 검토사항": region_note,
     }
@@ -600,13 +658,15 @@ def drawing_agent(state: DesignState):
 
 
 # =========================================================
-# 7. 예비 검토 Agent
+# 7. 하중계산 및 예비 구조해석 Agent
 # =========================================================
 def analysis_agent(state: DesignState):
     if state["missing_fields"]:
         state["analysis_result"] = {}
+        state["load_result"] = {}
         return state
 
+    region = state["region"]
     total_width = state["total_width"]
     design_length = state["design_length"]
     eave_height = state["eave_height"]
@@ -614,9 +674,117 @@ def analysis_agent(state: DesignState):
     frame_spacing = state["frame_spacing"]
     span_count = state["span_count"]
     frame_count = state["frame_count"]
+    member = state["member"]
 
+    # -----------------------------------------------------
+    # 1. 기본 설계값 가정
+    # -----------------------------------------------------
+    V = 30.0
+    ground_snow_load = 0.5
+
+    if region in ["포항", "부산", "울산", "제주", "서귀포", "제주시"]:
+        V = 35.0
+
+    if region in ["강원", "평창", "대관령"]:
+        ground_snow_load = 1.2
+    elif region in ["제주", "서귀포", "제주시"]:
+        ground_snow_load = 0.3
+
+    rho = 1.225
+    q_velocity_pa = 0.5 * rho * V ** 2
+    q_velocity_kn = q_velocity_pa / 1000
+
+    Cpe = state["external_cp"]
+    Cpi = state["internal_cp"]
+    net_cp = state["net_cp"]
+
+    # -----------------------------------------------------
+    # 2. 하중 산정
+    # -----------------------------------------------------
+    dead_load = 0.15  # kN/m², 피복재+파이프 자중 예비값
+    snow_shape_factor = 0.8
+    roof_snow_load = ground_snow_load * snow_shape_factor
+
+    wind_pressure = q_velocity_kn * net_cp
+    wind_pressure_abs = abs(wind_pressure)
+
+    dead_line_load = dead_load * frame_spacing
+    snow_line_load = roof_snow_load * frame_spacing
+    wind_line_load = wind_pressure_abs * frame_spacing
+
+    lc_dead = dead_line_load
+    lc_dead_snow = dead_line_load + snow_line_load
+    lc_wind_uplift = wind_line_load - dead_line_load
+    lc_dead_snow_wind = dead_line_load + snow_line_load + wind_line_load
+
+    # -----------------------------------------------------
+    # 3. 단순 등가 구조해석
+    #    1개 연동 폭을 단순보 등가 경간으로 보고 예비 모멘트 산정
+    # -----------------------------------------------------
+    span_width = total_width / span_count
+    h = ridge_height
+
+    # 지배 수직하중: D + S
+    w_vertical = lc_dead_snow
+    max_shear = w_vertical * span_width / 2
+    max_moment = w_vertical * span_width ** 2 / 8
+
+    # 풍하중에 의한 수평 전단 및 전도 모멘트 예비값
+    lateral_shear = wind_line_load * h
+    overturning_moment = wind_line_load * h ** 2 / 2
+
+    # -----------------------------------------------------
+    # 4. 부재 단면 예비 검토
+    # -----------------------------------------------------
+    def pipe_properties(member_text):
+        if "42.7" in member_text:
+            D = 0.0427
+            t = 0.0021
+        elif "31.8" in member_text:
+            D = 0.0318
+            t = 0.0015
+        else:
+            D = 0.0318
+            t = 0.0015
+
+        d = D - 2 * t
+        A = math.pi / 4 * (D ** 2 - d ** 2)
+        I = math.pi / 64 * (D ** 4 - d ** 4)
+        Z = I / (D / 2)
+        return D, t, A, I, Z
+
+    D, t, A, I, Z = pipe_properties(member)
+
+    sigma_allow = 150000  # kN/m² = 150 MPa
+    moment_capacity = sigma_allow * Z
+    moment_ratio = max_moment / moment_capacity if moment_capacity > 0 else 999
+
+    E = 200_000_000  # kN/m²
+    K = 1.0
+    effective_length = max(span_width / 2, 1.0)
+    p_cr = math.pi ** 2 * E * I / (K * effective_length) ** 2
+
+    # 단순 압축력 추정
+    estimated_compression = max_shear
+    buckling_ratio = estimated_compression / p_cr if p_cr > 0 else 999
+
+    utilization = max(moment_ratio, buckling_ratio)
+
+    if utilization <= 0.7:
+        safety_status = "OK"
+        safety_note = "예비 검토상 여유가 있는 설계안입니다."
+    elif utilization <= 1.0:
+        safety_status = "주의"
+        safety_note = "예비 검토상 한계에 가까운 설계안입니다. 최종 구조해석이 필요합니다."
+    else:
+        safety_status = "검토 필요"
+        safety_note = "예비 검토상 부재 보강 또는 프레임 간격 조정이 필요할 수 있습니다."
+
+    # -----------------------------------------------------
+    # 5. 자재 길이 산정
+    # -----------------------------------------------------
     roof_rise = ridge_height - eave_height
-    bay_width = total_width / span_count
+    bay_width = span_width
 
     samples = 80
     arch_len_per_span = 0.0
@@ -642,42 +810,53 @@ def analysis_agent(state: DesignState):
     purlin_length = design_length * purlin_count_per_span * span_count
     total_pipe_length = frame_pipe_length + purlin_length
 
-    q_snow = 0.5
-    if state["region"] in ["강원", "평창", "대관령"]:
-        q_snow = 1.2
-    elif state["region"] in ["제주", "서귀포", "제주시"]:
-        q_snow = 0.3
-
-    V = 30.0
-    if state["region"] in ["포항", "부산", "울산", "제주", "서귀포", "제주시"]:
-        V = 35.0
-
-    rho = 1.225
-    q_wind_pa = 0.5 * rho * V ** 2
-    q_wind_kn = q_wind_pa / 1000
-
-    snow_line_load = q_snow * frame_spacing
-    wind_line_load = q_wind_kn * 0.9 * frame_spacing
-
-    if span_count >= 3 or design_length > 60:
-        structural_note = "규모가 큰 편이므로 연동부, 기초, 풍하중 검토가 중요합니다."
-    else:
-        structural_note = "예비 규모상 일반적인 단동 또는 소규모 연동 온실 검토 단계에 해당합니다."
+    state["load_result"] = {
+        "기본풍속 V [m/s]": V,
+        "속도압 q [kN/m²]": round(q_velocity_kn, 3),
+        "대표 지붕부 외압계수 Cpe": Cpe,
+        "내압계수 Cpi": Cpi,
+        "순압계수 Cpe-Cpi": round(net_cp, 3),
+        "설계 풍압 p [kN/m²]": round(wind_pressure, 3),
+        "풍하중 선하중 [kN/m]": round(wind_line_load, 3),
+        "고정하중 [kN/m²]": dead_load,
+        "고정하중 선하중 [kN/m]": round(dead_line_load, 3),
+        "지상적설하중 [kN/m²]": ground_snow_load,
+        "지붕형상계수": snow_shape_factor,
+        "지붕적설하중 [kN/m²]": round(roof_snow_load, 3),
+        "적설하중 선하중 [kN/m]": round(snow_line_load, 3),
+        "LC1 D [kN/m]": round(lc_dead, 3),
+        "LC2 D+S [kN/m]": round(lc_dead_snow, 3),
+        "LC3 W-D 상향 [kN/m]": round(lc_wind_uplift, 3),
+        "LC4 D+S+W [kN/m]": round(lc_dead_snow_wind, 3),
+    }
 
     state["analysis_result"] = {
+        "검토 경간 [m]": round(span_width, 3),
+        "지배 수직하중 D+S [kN/m]": round(w_vertical, 3),
+        "최대 전단력 Vmax [kN]": round(max_shear, 3),
+        "최대 휨모멘트 Mmax [kN·m]": round(max_moment, 3),
+        "풍하중 수평전단 예비값 [kN]": round(lateral_shear, 3),
+        "풍하중 전도모멘트 예비값 [kN·m]": round(overturning_moment, 3),
+        "추천 부재": member,
+        "파이프 외경 [mm]": round(D * 1000, 1),
+        "파이프 두께 [mm]": round(t * 1000, 2),
+        "단면적 A [m²]": round(A, 8),
+        "단면2차모멘트 I [m⁴]": round(I, 12),
+        "단면계수 Z [m³]": round(Z, 10),
+        "예비 휨내력 [kN·m]": round(moment_capacity, 3),
+        "휨 검토비 M/Ma": round(moment_ratio, 3),
+        "Euler 좌굴하중 Pcr [kN]": round(p_cr, 3),
+        "좌굴 검토비 N/Pcr": round(buckling_ratio, 3),
+        "최대 활용률": round(utilization, 3),
+        "예비 판정": safety_status,
+        "예비 구조검토 의견": safety_note,
         "예상 총 파이프 길이 [m]": round(total_pipe_length, 2),
         "예상 프레임 파이프 길이 [m]": round(frame_pipe_length, 2),
         "예상 도리 길이 [m]": round(purlin_length, 2),
-        "기본풍속 가정 [m/s]": V,
-        "속도압 q [kN/m²]": round(q_wind_kn, 3),
-        "예비 풍하중 선하중 [kN/m]": round(wind_line_load, 3),
-        "지상적설하중 가정 [kN/m²]": q_snow,
-        "예비 적설 선하중 [kN/m]": round(snow_line_load, 3),
-        "예비 구조검토 의견": structural_note,
+        "주의": "현재 구조해석은 예비 단순해석입니다. 최종 설계에는 실제 프레임 구조해석, 하중조합, 좌굴길이, 접합부 검토가 필요합니다."
     }
 
     return state
-
 
 # =========================================================
 # 8. LangGraph 구성
@@ -723,6 +902,12 @@ def run_design(user_prompt: str):
         "frame_count": 0,
         "member": "",
         "covering": "",
+
+        "external_cp": 0.0,
+        "internal_cp": 0.0,
+        "net_cp": 0.0,
+        "coeff_result": {},
+        "load_result": {},
 
         "parsed_result": {},
         "recommendation_result": {},
@@ -942,6 +1127,12 @@ elif st.session_state["screen"] == "recommend":
 
                     st.divider()
 
+                    st.markdown("#### 풍압계수 자동 추천")
+                    st.write(f'**대표 지붕부 외압계수 Cpe:** {rec["대표 지붕부 외압계수 Cpe"]}')
+                    st.write(f'**내압계수 Cpi:** {rec["내압계수 Cpi"]}')
+                    st.write(f'**순압계수 Cpe-Cpi:** {rec["순압계수 Cpe-Cpi"]}')
+                    st.caption(rec["풍압계수 선정 기준"])
+                    
                     st.markdown("#### 자재 방향")
                     st.write(f'**추천 주요 부재:** {rec["추천 주요 부재"]}')
                     st.write(f'**추천 피복재:** {rec["추천 피복재"]}')
@@ -964,7 +1155,7 @@ elif st.session_state["screen"] == "recommend":
 
 
 # =========================================================
-# 15. 3번 화면: 예비 검토 결과
+# 15. 3번 화면: 하중계산 및 구조해석 결과
 # =========================================================
 elif st.session_state["screen"] == "results":
     if st.session_state["last_result"] is None:
@@ -975,58 +1166,105 @@ elif st.session_state["screen"] == "results":
         if not result["analysis_result"]:
             st.warning(result["response_text"])
         else:
+            load = result["load_result"]
             analysis = result["analysis_result"]
 
-            st.markdown('<div class="section-title">예비 검토 결과</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">하중계산 및 예비 구조해석 결과</div>', unsafe_allow_html=True)
 
-            c1, c2, c3 = st.columns(3)
+            c1, c2, c3, c4 = st.columns(4)
 
             with c1:
                 metric_card(
-                    "예상 총 파이프 길이",
-                    f'{analysis["예상 총 파이프 길이 [m]"]} m'
+                    "풍하중 선하중",
+                    f'{load["풍하중 선하중 [kN/m]"]} kN/m',
+                    f'Cpe-Cpi = {load["순압계수 Cpe-Cpi"]}'
                 )
 
             with c2:
                 metric_card(
-                    "예비 풍하중 선하중",
-                    f'{analysis["예비 풍하중 선하중 [kN/m]"]} kN/m'
+                    "적설하중 선하중",
+                    f'{load["적설하중 선하중 [kN/m]"]} kN/m',
+                    f'지붕적설하중 = {load["지붕적설하중 [kN/m²]"]} kN/m²'
                 )
 
             with c3:
                 metric_card(
-                    "예비 적설 선하중",
-                    f'{analysis["예비 적설 선하중 [kN/m]"]} kN/m'
+                    "고정하중 선하중",
+                    f'{load["고정하중 선하중 [kN/m]"]} kN/m',
+                    f'고정하중 = {load["고정하중 [kN/m²]"]} kN/m²'
                 )
 
-            left, right = st.columns([0.62, 0.38], gap="large")
+            with c4:
+                metric_card(
+                    "예비 판정",
+                    analysis["예비 판정"],
+                    f'최대 활용률 = {analysis["최대 활용률"]}'
+                )
+
+            left, right = st.columns([0.58, 0.42], gap="large")
 
             with left:
                 with st.container(border=True):
-                    st.markdown('<div class="section-title">3D 모델 재확인</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-title">하중 산정 결과</div>', unsafe_allow_html=True)
 
-                    if result["drawing_fig"] is not None:
-                        st.plotly_chart(result["drawing_fig"], use_container_width=True)
+                    st.markdown("#### 풍하중 계산")
+                    st.write(f'**기본풍속 V:** {load["기본풍속 V [m/s]"]} m/s')
+                    st.write(f'**속도압 q:** {load["속도압 q [kN/m²]"]} kN/m²')
+                    st.write(f'**외압계수 Cpe:** {load["대표 지붕부 외압계수 Cpe"]}')
+                    st.write(f'**내압계수 Cpi:** {load["내압계수 Cpi"]}')
+                    st.write(f'**설계 풍압 p = q × (Cpe-Cpi):** {load["설계 풍압 p [kN/m²]"]} kN/m²')
+                    st.write(f'**풍하중 선하중:** {load["풍하중 선하중 [kN/m]"]} kN/m')
+
+                    st.divider()
+
+                    st.markdown("#### 고정하중 · 적설하중 계산")
+                    st.write(f'**고정하중:** {load["고정하중 [kN/m²]"]} kN/m²')
+                    st.write(f'**고정하중 선하중:** {load["고정하중 선하중 [kN/m]"]} kN/m')
+                    st.write(f'**지상적설하중:** {load["지상적설하중 [kN/m²]"]} kN/m²')
+                    st.write(f'**지붕형상계수:** {load["지붕형상계수"]}')
+                    st.write(f'**지붕적설하중:** {load["지붕적설하중 [kN/m²]"]} kN/m²')
+                    st.write(f'**적설하중 선하중:** {load["적설하중 선하중 [kN/m]"]} kN/m')
+
+                    st.divider()
+
+                    st.markdown("#### 하중조합")
+                    st.table([{
+                        "LC1 D": load["LC1 D [kN/m]"],
+                        "LC2 D+S": load["LC2 D+S [kN/m]"],
+                        "LC3 W-D 상향": load["LC3 W-D 상향 [kN/m]"],
+                        "LC4 D+S+W": load["LC4 D+S+W [kN/m]"],
+                    }])
 
             with right:
                 with st.container(border=True):
-                    st.markdown('<div class="section-title">종합 의견</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-title">예비 구조해석</div>', unsafe_allow_html=True)
 
-                    st.markdown(
-                        f"""
-                        <div class="ok-box">
-                        <b>예비 검토 완료</b><br>
-                        {analysis["예비 구조검토 의견"]}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    if analysis["예비 판정"] == "OK":
+                        st.success(analysis["예비 구조검토 의견"])
+                    elif analysis["예비 판정"] == "주의":
+                        st.warning(analysis["예비 구조검토 의견"])
+                    else:
+                        st.error(analysis["예비 구조검토 의견"])
 
-                    st.write(f'**기본풍속 가정:** {analysis["기본풍속 가정 [m/s]"]} m/s')
-                    st.write(f'**속도압 q:** {analysis["속도압 q [kN/m²]"]} kN/m²')
-                    st.write(f'**지상적설하중 가정:** {analysis["지상적설하중 가정 [kN/m²]"]} kN/m²')
-                    st.write(f'**예상 프레임 파이프 길이:** {analysis["예상 프레임 파이프 길이 [m]"]} m')
-                    st.write(f'**예상 도리 길이:** {analysis["예상 도리 길이 [m]"]} m')
+                    st.markdown("#### 부재 검토")
+                    st.write(f'**추천 부재:** {analysis["추천 부재"]}')
+                    st.write(f'**파이프 외경:** {analysis["파이프 외경 [mm]"]} mm')
+                    st.write(f'**파이프 두께:** {analysis["파이프 두께 [mm]"]} mm')
+                    st.write(f'**검토 경간:** {analysis["검토 경간 [m]"]} m')
 
-            with st.expander("전체 예비 검토값 보기"):
+                    st.divider()
+
+                    st.markdown("#### 구조해석 지표")
+                    st.write(f'**최대 전단력 Vmax:** {analysis["최대 전단력 Vmax [kN]"]} kN')
+                    st.write(f'**최대 휨모멘트 Mmax:** {analysis["최대 휨모멘트 Mmax [kN·m]"]} kN·m')
+                    st.write(f'**예비 휨내력:** {analysis["예비 휨내력 [kN·m]"]} kN·m')
+                    st.write(f'**휨 검토비 M/Ma:** {analysis["휨 검토비 M/Ma"]}')
+                    st.write(f'**Euler 좌굴하중 Pcr:** {analysis["Euler 좌굴하중 Pcr [kN]"]} kN')
+                    st.write(f'**좌굴 검토비 N/Pcr:** {analysis["좌굴 검토비 N/Pcr"]}')
+                    st.write(f'**최대 활용률:** {analysis["최대 활용률"]}')
+
+            with st.expander("전체 하중계산 결과 보기"):
+                st.table([load])
+
+            with st.expander("전체 구조해석 결과 보기"):
                 st.table([analysis])
